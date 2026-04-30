@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head><title>Tile Viewer - Kenney Pixel Platformer</title>
+<style>
+body{background:#222;color:#fff;font-family:monospace;padding:20px}
+h2{color:#ffd700}
+.grid{display:flex;flex-wrap:wrap;gap:2px;margin:10px 0}
+.tile{position:relative;border:1px solid #444;cursor:pointer}
+.tile:hover{border-color:#ffd700}
+.tile-label{position:absolute;top:2px;left:2px;font-size:9px;color:#0f0;text-shadow:1px 1px #fff}
+.section{margin:30px 0;padding:15px;border:1px solid #444;border-radius:4px}
+</style>
+</head>
+<body>
+<h1>Kenney Pixel Platformer - Tile Reference</h1>
+<p>Hover over tiles to see their IDs. Click to copy the tile ID.</p>
+<div id="output"></div>
+<div id="viewer" style="position:fixed;top:10px;right:10px;background:rgba(0,0,0,0.9);padding:15px;border:2px solid #ffd700;border-radius:8px;display:none;font-size:14px;max-width:300px" id="info"></div>
+<script>
+const info = document.getElementById('viewer');
+
+function createSection(title, imgSrc, tileW, tileH, cols, rows, spacing, firstgid) {
+    const div = document.createElement('div');
+    div.className = 'section';
+    div.innerHTML = `<h2>${title}</h2><p>${imgSrc} | ${cols}x${rows} tiles | ${tileW}x${tileH}px | spacing: ${spacing}px | firstgid: ${firstgid}</p>`;
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+    const img = new Image();
+    img.src = imgSrc;
+    img.onload = () => {
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                const idx = r * cols + c;
+                const globalId = idx + firstgid;
+                const canvas = document.createElement('canvas');
+                canvas.width = tileW * 3;
+                canvas.height = tileH * 3;
+                canvas.className = 'tile';
+                canvas.title = `Index: ${idx} | Global ID: ${globalId} | Col: ${c} Row: ${r}`;
+                const ctx = canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = false;
+                const sx = c * (tileW + spacing);
+                const sy = r * (tileH + spacing);
+                ctx.drawImage(img, sx, sy, tileW, tileH, 0, 0, tileW * 3, tileH * 3);
+                const label = document.createElement('span');
+                label.className = 'tile-label';
+                label.textContent = globalId;
+                canvas.appendChild(label);
+                canvas.onclick = () => {
+                    navigator.clipboard.writeText(String(globalId));
+                    info.style.display = 'block';
+                    info.innerHTML = `<b>Tile ID: ${globalId}</b><br>Index: ${idx}<br>Col: ${c}, Row: ${r}<br><small>Copied to clipboard!</small>`;
+                    setTimeout(() => info.style.display = 'none', 3000);
+                };
+                grid.appendChild(canvas);
+            }
+        }
+    };
+    div.appendChild(grid);
+    document.getElementById('output').appendChild(div);
+}
+
+createSection('Tiles (tilemap.png - non-packed)', 'kenney_pixel-platformer/Tilemap/tilemap.png', 18, 18, 20, 9, 1, 28);
+createSection('Tiles (tilemap_packed.png - packed)', 'kenney_pixel-platformer/Tilemap/tilemap_packed.png', 18, 18, 20, 9, 0, 28);
+createSection('Characters (tilemap-characters.png)', 'kenney_pixel-platformer/Tilemap/tilemap-characters.png', 24, 24, 9, 3, 1, 1);
+createSection('Characters (tilemap-characters_packed.png)', 'kenney_pixel-platformer/Tilemap/tilemap-characters_packed.png', 24, 24, 9, 3, 0, 1);
+createSection('Backgrounds (tilemap-backgrounds.png)', 'kenney_pixel-platformer/Tilemap/tilemap-backgrounds.png', 24, 24, 8, 3, 1, 0);
+</script>
+</body>
+</html>
