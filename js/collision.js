@@ -79,3 +79,17 @@ export const HAZARD_IDS = new Set([96]);
 export const COIN_IDS = new Set([179, 180]);
 export const HEART_IDS = new Set([72]);
 export const EXIT_IDS = new Set([178]);
+export const LADDER_IDS = new Set([79, 99]);
+export const ROPE_IDS = new Set([118, 119, 120]);
+export const SPRING_IDS = new Set([135, 136]);
+
+export function isLadder(tileId) { return LADDER_IDS.has(tileId); }
+export function isRope(tileId) { return ROPE_IDS.has(tileId); }
+export function isSpring(tileId) { return SPRING_IDS.has(tileId); }
+
+export function getTileAt(map, col, row) {
+    if (row >= 0 && row < map.length && col >= 0 && col < map[0].length) {
+        return map[row][col];
+    }
+    return 0;
+}

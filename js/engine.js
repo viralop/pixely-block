@@ -4,10 +4,11 @@ import { Audio } from './audio.js';
 import { UI } from './ui.js';
 import { Player } from './player.js';
 import { Enemy } from './enemy.js';
-import { getLevel, getTotalLevels } from './levels.js';
-import { rectOverlap, HAZARD_IDS, COIN_IDS, HEART_IDS, EXIT_IDS, getTilesInRegion } from './collision.js';
+import { getLevel, getTotalLevels, getCustomLevels, getCustomLevel, seedBuiltInLevels } from './levels.js';
+import { rectOverlap, HAZARD_IDS, COIN_IDS, HEART_IDS, EXIT_IDS, SPRING_IDS, getTilesInRegion, getTileAt } from './collision.js';
 
 const FIXED_DT = 1000 / 60;
+const SPRING_FORCE = -16;
 
 export class Game {
     constructor(canvas) {
@@ -26,12 +27,41 @@ export class Game {
         this.player = null;
         this.enemies = [];
         this.camX = 0;
+        this.camY = 0;
         this.hitSet = new Set();
         this.particles = [];
         this.frameCount = 0;
         this.coinAnimId = 179;
+        this.triggeredSprings = new Map();
         this.lastTime = 0;
         this.accumulator = 0;
+
+        this.menuSel = 0;
+        this.menuItems = [];
+        this.customMode = false;
+        this.pauseSel = 0;
+        this.pauseHeld = false;
+    }
+
+    _buildMenu() {
+        const items = [];
+        items.push({ type: 'play', label: 'Play Game', action: () => this._startNewGame() });
+                items.push({ type: 'editor', label: 'Level Editor', action: () => { window.location.href = 'editor.html'; } });
+
+        const customs = getCustomLevels();
+        if (customs.length > 0) {
+            items.push({ type: 'header', label: '-- Custom Levels --', action: null });
+            for (const cl of customs) {
+                const cName = cl.name;
+                items.push({
+                    type: 'custom',
+                    label: '\u2605 ' + cName,
+                    action: () => this._startCustomLevel(cName)
+                });
+            }
+        }
+        this.menuItems = items;
+        if (this.menuSel >= items.length) this.menuSel = 0;
     }
 
     async start() {
@@ -52,6 +82,8 @@ export class Game {
             return;
         }
         this.state = 'MENU';
+        seedBuiltInLevels();
+        this._buildMenu();
         this._loop = this._loop.bind(this);
         requestAnimationFrame(this._loop);
     }
@@ -72,32 +104,107 @@ export class Game {
     _update() {
         switch (this.state) {
             case 'MENU':
-                if (this.input.enter) this._startNewGame();
+                this._updateMenu();
                 break;
             case 'PLAYING':
-                if (this.input.escape) { this.state = 'PAUSED'; break; }
+                if (this.input.escape) { this.state = 'PAUSED'; this.pauseSel = 0; this.pauseHeld = true; break; }
                 this._updatePlay();
                 break;
             case 'PAUSED':
-                if (this.input.escape) this.state = 'PLAYING';
+                this._updatePause();
                 break;
             case 'LEVEL_COMPLETE':
                 if (this.input.enter) this._advanceLevel();
                 break;
             case 'GAME_OVER':
-                if (this.input.enter) this.state = 'MENU';
+                if (this.input.enter) { this.state = 'MENU'; this._buildMenu(); }
                 break;
             case 'VICTORY':
-                if (this.input.enter) this.state = 'MENU';
+                if (this.input.enter) { this.state = 'MENU'; this._buildMenu(); }
                 break;
         }
         this.input.update();
     }
 
+    _updateMenu() {
+        const items = this.menuItems.filter(i => i.type !== 'header');
+        const realIdx = this._menuSelToReal();
+
+        if (this.input.isDown('ArrowUp') || this.input.isDown('KeyW')) {
+            if (!this._menuHeld) {
+                this._menuHeld = true;
+                this.menuSel = (this.menuSel - 1 + items.length) % items.length;
+            }
+        } else if (this.input.isDown('ArrowDown') || this.input.isDown('KeyS')) {
+            if (!this._menuHeld) {
+                this._menuHeld = true;
+                this.menuSel = (this.menuSel + 1) % items.length;
+            }
+        } else {
+            this._menuHeld = false;
+        }
+
+        if (this.input.enter) {
+            const item = items[this.menuSel];
+            if (item && item.action) item.action();
+        }
+    }
+
+    _menuSelToReal() {
+        let count = 0;
+        for (let i = 0; i < this.menuItems.length; i++) {
+            if (this.menuItems[i].type !== 'header') {
+                if (count === this.menuSel) return i;
+                count++;
+            }
+        }
+        return 0;
+    }
+
+    _updatePause() {
+        const pauseItems = ['Resume', 'Exit to Menu'];
+        if (this.input.escape) { this.state = 'PLAYING'; this.pauseHeld = true; return; }
+        if (this.pauseHeld) { if (!this.input.isDown('Escape')) this.pauseHeld = false; return; }
+        const up = this.input.isDown('ArrowUp') || this.input.isDown('KeyW');
+        const down = this.input.isDown('ArrowDown') || this.input.isDown('KeyS');
+        if (up || down) {
+            if (!this._pauseHeld) {
+                this._pauseHeld = true;
+                this.pauseSel = (this.pauseSel + (down ? 1 : -1) + pauseItems.length) % pauseItems.length;
+            }
+        } else { this._pauseHeld = false; }
+        if (this.input.enter) {
+            if (this.pauseSel === 0) { this.state = 'PLAYING'; }
+            else { this.state = 'MENU'; this._buildMenu(); }
+        }
+    }
+
     _startNewGame() {
         this.score = 0;
         this.levelIdx = 0;
+        this.customMode = false;
         this._loadLevel(0);
+    }
+
+    _startCustomLevel(name) {
+        const level = getCustomLevel(name);
+        if (!level) return;
+        this.score = 0;
+        this.customMode = true;
+        this.level = level;
+        this.level.name = name;
+        this.level.index = 0;
+        this.level.totalLevels = 1;
+        this.triggeredSprings = new Map();
+        const sx = level.spawn.tx * Sprites.RENDER_TILE;
+        const sy = level.spawn.ty * Sprites.RENDER_TILE;
+        this.player = new Player(sx, sy);
+        this.enemies = [];
+        this.hitSet.clear();
+        this.particles = [];
+        this.camX = 0;
+        this.camY = 0;
+        this.state = 'PLAYING';
     }
 
     _loadLevel(idx) {
@@ -105,6 +212,7 @@ export class Game {
         if (!level) { this.state = 'VICTORY'; return; }
         this.level = level;
         this.levelIdx = idx;
+        this.triggeredSprings = new Map();
 
         const sx = level.spawn.tx * Sprites.RENDER_TILE;
         const sy = level.spawn.ty * Sprites.RENDER_TILE;
@@ -117,10 +225,15 @@ export class Game {
         this.hitSet.clear();
         this.particles = [];
         this.camX = 0;
+        this.camY = 0;
         this.state = 'PLAYING';
     }
 
     _advanceLevel() {
+        if (this.customMode) {
+            this.state = 'VICTORY';
+            return;
+        }
         const next = this.levelIdx + 1;
         if (next >= getTotalLevels()) {
             this.state = 'VICTORY';
@@ -134,6 +247,8 @@ export class Game {
         if (this.frameCount % 15 === 0) {
             this.coinAnimId = this.coinAnimId === 179 ? 180 : 179;
         }
+
+        this._checkSpringBounce();
 
         this.player.update(this.input, this.level.map, Sprites.RENDER_TILE, Sprites.RENDER_TILE);
 
@@ -161,10 +276,34 @@ export class Game {
         this._updateParticles();
         this._updateCamera();
 
+        for (const [key, frames] of this.triggeredSprings) {
+            if (frames <= 1) this.triggeredSprings.delete(key);
+            else this.triggeredSprings.set(key, frames - 1);
+        }
+
         if (this.player.dead) {
             this.audio.gameOver();
             this._emitParticles(this.player.getCenterX(), this.player.getCenterY(), '#e74c3c', 20, 3, -3);
             this.state = 'GAME_OVER';
+        }
+    }
+
+    _checkSpringBounce() {
+        const p = this.player;
+        const tileW = Sprites.RENDER_TILE;
+        const feetCol = Math.floor((p.x + p.w / 2) / tileW);
+        const feetRow = Math.floor((p.y + p.h) / tileW);
+        const tile = getTileAt(this.level.map, feetCol, feetRow);
+        if (SPRING_IDS.has(tile) && p.vy >= 0) {
+            const springTop = feetRow * tileW;
+            if (p.y + p.h >= springTop && p.y + p.h <= springTop + tileW * 0.6) {
+                p.vy = SPRING_FORCE;
+                p.onGround = false;
+                p.y = springTop - p.h;
+                this.triggeredSprings.set(`${feetRow},${feetCol}`, 12);
+                this.audio.spring();
+                this._emitParticles(p.getCenterX(), springTop, '#ff6', 8, 2, -3);
+            }
         }
     }
 
@@ -189,7 +328,7 @@ export class Game {
                 this._emitParticles(t.x + Sprites.RENDER_TILE / 2, t.y + Sprites.RENDER_TILE / 2, '#ff6b9d', 8, 2, -3);
             } else if (HAZARD_IDS.has(t.tileId)) {
                 if (this.player.takeDamage(12)) {
-                    this.player.knockback(this.player.x + this.player.w / 2);
+                    this.player.knockback(this.player.x + this.w / 2);
                     this.audio.spike();
                     this._emitParticles(this.player.getCenterX(), this.player.getCenterY(), '#ff4444', 8, 3, -2);
                 }
@@ -204,10 +343,7 @@ export class Game {
     }
 
     _checkPlayerAttack() {
-        if (!this.player.attacking) {
-            this.hitSet.clear();
-            return;
-        }
+        if (!this.player.attacking) { this.hitSet.clear(); return; }
         const box = this.player.getAttackBox();
         if (!box) return;
         this.enemies.forEach((e, i) => {
@@ -267,9 +403,13 @@ export class Game {
 
     _updateCamera() {
         const targetX = this.player.getCenterX() - this.W / 2;
+        const targetY = this.player.getCenterY() - this.H / 2;
         const maxX = this.level.width * Sprites.RENDER_TILE - this.W;
-        const clamped = Math.max(0, Math.min(targetX, maxX));
-        this.camX += (clamped - this.camX) * 0.12;
+        const maxY = this.level.height * Sprites.RENDER_TILE - this.H;
+        const cx = Math.max(0, Math.min(targetX, maxX));
+        const cy = Math.max(0, Math.min(targetY, maxY));
+        this.camX += (cx - this.camX) * 0.12;
+        this.camY += (cy - this.camY) * 0.12;
     }
 
     _render() {
@@ -281,14 +421,14 @@ export class Game {
                 this.ui.renderLoading();
                 break;
             case 'MENU':
-                this.ui.renderMenu();
+                this.ui.renderMenu(this.menuSel, this.menuItems);
                 break;
             case 'PLAYING':
             case 'PAUSED':
                 this._renderWorld();
                 this._renderParticles();
                 this.ui.renderHUD(this.player, this.score, this.level.name, this.levelIdx + 1, getTotalLevels());
-                if (this.state === 'PAUSED') this.ui.renderPause(this.score, this.level.name);
+                if (this.state === 'PAUSED') this.ui.renderPause(this.score, this.level.name, this.pauseSel);
                 break;
             case 'LEVEL_COMPLETE':
                 this._renderWorld();
@@ -310,58 +450,52 @@ export class Game {
         const ctx = this.ctx;
         const lvl = this.level;
         const cx = Math.round(this.camX);
+        const cy = Math.round(this.camY);
 
-        Sprites.drawBgParallax(ctx, this.W, this.H, this.camX, 0, lvl.bgColor);
+        Sprites.drawBgParallax(ctx, this.W, this.H, this.camX, this.camY, lvl.bgColor);
 
         const startCol = Math.max(0, Math.floor(cx / Sprites.RENDER_TILE));
         const endCol = Math.min(lvl.width - 1, Math.ceil((cx + this.W) / Sprites.RENDER_TILE));
+        const startRow = Math.max(0, Math.floor(cy / Sprites.RENDER_TILE));
+        const endRow = Math.min(lvl.height - 1, Math.ceil((cy + this.H) / Sprites.RENDER_TILE));
 
-        for (let row = 0; row < lvl.height; row++) {
+        for (let row = startRow; row <= endRow; row++) {
             for (let col = startCol; col <= endCol; col++) {
                 let id = lvl.map[row][col];
                 if (id === 179 || id === 180) id = this.coinAnimId;
+                if (id === 135 || id === 136) {
+                    const key = `${row},${col}`;
+                    id = this.triggeredSprings.has(key) ? 136 : 135;
+                }
                 if (id > 0) {
-                    const sx = col * Sprites.RENDER_TILE - cx;
-                    const sy = row * Sprites.RENDER_TILE;
-                    Sprites.drawTile(ctx, id, sx, sy);
+                    Sprites.drawTile(ctx, id, col * Sprites.RENDER_TILE - cx, row * Sprites.RENDER_TILE - cy);
                 }
             }
         }
 
-        this._renderExitGlow(cx);
+        if (lvl.decorations) {
+            for (const d of lvl.decorations) {
+                const dx = d.tx * Sprites.RENDER_TILE - cx;
+                const dy = d.ty * Sprites.RENDER_TILE - cy;
+                if (dx > -Sprites.RENDER_TILE && dx < this.W + Sprites.RENDER_TILE &&
+                    dy > -Sprites.RENDER_TILE && dy < this.H + Sprites.RENDER_TILE) {
+                    Sprites.drawTile(ctx, d.id, dx, dy);
+                }
+            }
+        }
 
-        this.enemies.forEach(e => e.render(ctx, cx, 0, Sprites.drawChar));
-        this.player.render(ctx, cx, 0, Sprites.drawChar);
-    }
-
-    _renderExitGlow(cx) {
-        const lvl = this.level;
-        const ex = lvl.exit.tx * Sprites.RENDER_TILE - cx;
-        const ey = lvl.exit.ty * Sprites.RENDER_TILE;
-        const pulse = 0.5 + 0.5 * Math.sin(this.frameCount * 0.06);
-        const ctx = this.ctx;
-
-        ctx.save();
-        ctx.globalAlpha = 0.15 + pulse * 0.15;
-        ctx.fillStyle = '#4caf50';
-        ctx.shadowColor = '#4caf50';
-        ctx.shadowBlur = 15 + pulse * 10;
-        ctx.fillRect(ex - 4, ey - 4, Sprites.RENDER_TILE + 8, Sprites.RENDER_TILE + 8);
-        ctx.shadowBlur = 0;
-        ctx.globalAlpha = 0.3 + pulse * 0.3;
-        ctx.fillStyle = '#8f8';
-        ctx.fillRect(ex + 8, ey - 20, 6, 12);
-        ctx.globalAlpha = 1;
-        ctx.restore();
+        this.enemies.forEach(e => e.render(ctx, cx, cy, Sprites.drawChar));
+        this.player.render(ctx, cx, cy, Sprites.drawChar);
     }
 
     _renderParticles() {
         const ctx = this.ctx;
         const cx = Math.round(this.camX);
+        const cy = Math.round(this.camY);
         for (const p of this.particles) {
             ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
             ctx.fillStyle = p.color;
-            ctx.fillRect(p.x - cx - p.size / 2, p.y - p.size / 2, p.size, p.size);
+            ctx.fillRect(p.x - cx - p.size / 2, p.y - cy - p.size / 2, p.size, p.size);
         }
         ctx.globalAlpha = 1;
     }

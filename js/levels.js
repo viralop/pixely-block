@@ -56,6 +56,28 @@ function tree(map, x, y) {
     }
 }
 
+function ladder(map, x, y, h) {
+    for (let i = 0; i < h; i++) {
+        const row = y - i;
+        if (row < 0 || !map[row]) continue;
+        map[row][x] = i === 0 ? 79 : 99;
+    }
+}
+
+function rope(map, x, y, len) {
+    if (!map[y]) return;
+    const cx = Math.floor(len / 2);
+    for (let i = 0; i < len; i++) {
+        const col = x + i;
+        if (col >= map[0].length) continue;
+        if (i === 0) map[y][col] = 118;
+        else if (i === len - 1) map[y][col] = 120;
+        else map[y][col] = 119;
+    }
+}
+
+function spr(map, x, y) { if (map[y]) map[y][x] = 135; }
+
 function slime(tx, ty, l, r) { return { type: 'slime', tx, ty, patrolL: l, patrolR: r }; }
 function bat(tx, ty, l, r) { return { type: 'bat', tx, ty, patrolL: l, patrolR: r }; }
 function skel(tx, ty, l, r) { return { type: 'skeleton', tx, ty, patrolL: l, patrolR: r }; }
@@ -87,6 +109,10 @@ function buildLevel1() {
     cn(map, 36, 3, 2);
 
     hr(map, 31, 4);
+
+    ladder(map, 13, 8, 2);
+
+    spr(map, 30, 7);
 
     tree(map, 1, 5);
     tree(map, 3, 4);
@@ -144,6 +170,11 @@ function buildLevel2() {
 
     hr(map, 27, 2);
     hr(map, 42, 4);
+
+    ladder(map, 10, 8, 3);
+    rope(map, 32, 2, 5);
+
+    spr(map, 37, 7);
 
     dco(map, 2, 7);
     dco(map, 13, 7);
@@ -212,6 +243,13 @@ function buildLevel3() {
     hr(map, 7, 3);
     hr(map, 25, 3);
     hr(map, 39, 2);
+
+    ladder(map, 14, 8, 3);
+    ladder(map, 30, 8, 2);
+    rope(map, 21, 3, 5);
+
+    spr(map, 37, 7);
+    spr(map, 48, 7);
 
     tree(map, 1, 5);
     tree(map, 4, 4);
@@ -295,6 +333,14 @@ function buildLevel4() {
     hr(map, 23, 3);
     hr(map, 34, 2);
     hr(map, 49, 3);
+
+    ladder(map, 16, 8, 3);
+    ladder(map, 42, 8, 2);
+    rope(map, 26, 3, 5);
+    rope(map, 45, 2, 4);
+
+    spr(map, 29, 7);
+    spr(map, 53, 7);
 
     dco(map, 2, 7);
     dco(map, 11, 7);
@@ -389,6 +435,17 @@ function buildLevel5() {
     hr(map, 45, 2);
     hr(map, 55, 3);
 
+    ladder(map, 8, 8, 3);
+    ladder(map, 28, 8, 2);
+    ladder(map, 47, 8, 3);
+    rope(map, 14, 3, 5);
+    rope(map, 38, 2, 5);
+    rope(map, 56, 3, 4);
+
+    spr(map, 21, 7);
+    spr(map, 41, 7);
+    spr(map, 59, 7);
+
     tree(map, 1, 5);
     dco(map, 10, 7);
     dco(map, 17, 7);
@@ -419,10 +476,18 @@ function buildLevel5() {
     };
 }
 
+const levelNames = ['Green Meadows', 'Rocky Caves', 'Haunted Woods', 'Dark Caves', 'Final Quest'];
 const builders = [buildLevel1, buildLevel2, buildLevel3, buildLevel4, buildLevel5];
 
 export function getLevel(index) {
     if (index < 0 || index >= builders.length) return null;
+    const name = levelNames[index];
+    const custom = getCustomLevel(name);
+    if (custom) {
+        custom.index = index;
+        custom.totalLevels = builders.length;
+        return custom;
+    }
     const level = builders[index]();
     level.index = index;
     level.totalLevels = builders.length;
@@ -430,3 +495,54 @@ export function getLevel(index) {
 }
 
 export function getTotalLevels() { return builders.length; }
+
+export function seedBuiltInLevels() {
+    const existing = getCustomLevels();
+    for (let i = 0; i < builders.length; i++) {
+        const name = levelNames[i];
+        if (existing.find(l => l.name === name)) continue;
+        const lvl = builders[i]();
+        existing.push({ name, w: lvl.width, h: lvl.height, map: lvl.map, builtin: true, created: 0 });
+    }
+    localStorage.setItem('pqCustomLevels', JSON.stringify(existing));
+}
+
+export function getCustomLevels() {
+    try {
+        const raw = localStorage.getItem('pqCustomLevels');
+        if (!raw) return [];
+        return JSON.parse(raw);
+    } catch (e) { return []; }
+}
+
+export function saveCustomLevel(name, w, h, mapData) {
+    const levels = getCustomLevels();
+    const existing = levels.findIndex(l => l.name === name);
+    const entry = { name, w, h, map: mapData, created: Date.now() };
+    if (existing >= 0) levels[existing] = entry;
+    else levels.push(entry);
+    localStorage.setItem('pqCustomLevels', JSON.stringify(levels));
+}
+
+export function deleteCustomLevel(name) {
+    const levels = getCustomLevels().filter(l => l.name !== name);
+    localStorage.setItem('pqCustomLevels', JSON.stringify(levels));
+}
+
+export function getCustomLevel(name) {
+    const levels = getCustomLevels();
+    const entry = levels.find(l => l.name === name);
+    if (!entry) return null;
+    return {
+        name: entry.name,
+        width: entry.w,
+        height: entry.h,
+        theme: 'grass',
+        bgColor: '#1a2a1a',
+        spawn: { tx: 1, ty: entry.h - 2 },
+        exit: { tx: entry.w - 2, ty: entry.h - 2 },
+        map: entry.map.map(r => r.slice()),
+        entities: [],
+        decorations: []
+    };
+}

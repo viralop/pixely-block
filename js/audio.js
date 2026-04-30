@@ -75,4 +75,6 @@ export class Audio {
     }
 
     spike() { this._play(80, 'sawtooth', 0.15, 0.25); }
+
+    spring() { this._playSequence([[300, 0.06], [600, 0.08], [900, 0.12]], 'square'); }
 }

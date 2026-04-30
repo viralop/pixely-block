@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pixel Quest - Level Editor</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0f0f23; font-family: 'Segoe UI', system-ui, sans-serif; color: #e0e0e0; overflow: hidden; height: 100vh; }
+
+  /* === LEVEL PICKER === */
+  #picker {
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    height: 100vh; gap: 20px;
+  }
+  #picker.active { display: flex; }
+  #picker h1 { font-size: 24px; color: #ffd700; }
+  #picker h2 { font-size: 12px; color: #888; }
+  #picker-list {
+    display: flex; flex-direction: column; gap: 6px; max-height: 50vh;
+    overflow-y: auto; width: 360px; padding: 10px;
+  }
+  #picker-list::-webkit-scrollbar { width: 6px; }
+  #picker-list::-webkit-scrollbar-thumb { background: #2a2a4a; border-radius: 3px; }
+  .pick-row {
+    display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+    background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 6px;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .pick-row:hover { background: #2a2a5a; border-color: #8be9fd; }
+  .pick-row .pick-icon { font-size: 18px; }
+  .pick-row .pick-name { flex: 1; font-size: 13px; }
+  .pick-row .pick-size { font-size: 10px; color: #666; }
+  .pick-new { border-color: #e94560 !important; }
+  .pick-new .pick-name { color: #e94560; }
+  .pick-back {
+    padding: 10px 30px; background: #1a1a2e; border: 1px solid #2a2a4a;
+    color: #e0e0e0; cursor: pointer; border-radius: 6px; font-size: 13px;
+  }
+  .pick-back:hover { background: #e94560; border-color: #e94560; }
+
+  /* === EDITOR === */
+  #editor { display: none; height: 100vh; }
+  #editor.active, #picker.active { display: flex; }
+
+  #sidebar {
+    width: 240px; min-width: 240px; background: #111; border-right: 1px solid #2a2a4a;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  #sidebar h3 {
+    font-size: 11px; color: #8be9fd; text-transform: uppercase; letter-spacing: 1px;
+    padding: 8px 10px 4px; border-top: 1px solid #2a2a4a;
+  }
+  #sidebar h3:first-child { border-top: none; }
+
+  .btn-row { display: flex; gap: 3px; padding: 4px 10px; flex-wrap: wrap; }
+  .btn {
+    padding: 5px 8px; border: 1px solid #2a2a4a; background: #1a1a2e; color: #e0e0e0;
+    cursor: pointer; border-radius: 3px; font-size: 11px;
+  }
+  .btn:hover { background: #2a2a5a; }
+  .btn.green { background: #1a3a2a; border-color: #2d6a4f; }
+  .btn.green:hover { background: #2d6a4f; }
+  .btn.blue { background: #1a1a3e; border-color: #4361ee; }
+  .btn.blue:hover { background: #3a3a6e; }
+  .btn.red { background: #3a1a1a; border-color: #d00000; }
+  .btn.red:hover { background: #6a1a1a; }
+
+  #palette-scroll { flex: 1; overflow-y: auto; padding: 6px; border-top: 1px solid #2a2a4a; }
+  #palette-scroll::-webkit-scrollbar { width: 6px; }
+  #palette-scroll::-webkit-scrollbar-thumb { background: #2a2a4a; border-radius: 3px; }
+  #palette { display: flex; flex-wrap: wrap; gap: 2px; }
+  .pal-tile {
+    cursor: grab; border: 2px solid transparent; border-radius: 2px;
+    image-rendering: pixelated; image-rendering: crisp-edges;
+  }
+  .pal-tile:hover { border-color: #8be9fd; }
+  .pal-tile.sel { border-color: #e94560; }
+
+  #sel-info {
+    padding: 6px 10px; font-size: 11px; color: #aaa;
+    display: flex; align-items: center; gap: 8px; border-top: 1px solid #2a2a4a;
+  }
+  #sel-preview { image-rendering: pixelated; border: 1px solid #333; }
+
+  #toolbar {
+    display: flex; gap: 4px; padding: 6px 10px; background: #111; border-bottom: 1px solid #2a2a4a; flex-shrink: 0; align-items: center;
+  }
+  .tool-btn {
+    padding: 6px 16px; border: 2px solid #2a2a4a; background: #1a1a2e; color: #aaa;
+    cursor: pointer; border-radius: 4px; font-size: 12px; font-weight: 600; transition: all 0.15s;
+  }
+  .tool-btn:hover { background: #2a2a5a; color: #fff; }
+  .tool-btn.active-build { background: #1a3a1a; border-color: #4caf50; color: #4caf50; }
+  .tool-btn.active-paint { background: #1a2a3a; border-color: #42a5f5; color: #42a5f5; }
+  .tool-btn.active-erase { background: #3a1a1a; border-color: #e94560; color: #e94560; }
+  #toolbar-sep { width: 1px; height: 20px; background: #2a2a4a; margin: 0 6px; }
+  #toolbar-mode { font-size: 10px; color: #666; }
+
+  #canvas-wrap { flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+  #editor-canvas { display: block; flex: 1; }
+
+  #hscroll-wrap {
+    height: 18px; background: #111; border-top: 1px solid #2a2a4a;
+    position: relative; cursor: pointer; flex-shrink: 0;
+  }
+  #hscroll-track { position: absolute; top: 2px; bottom: 2px; left: 0; right: 0; }
+  #hscroll-thumb {
+    position: absolute; top: 0; bottom: 0; min-width: 20px;
+    background: #2a2a4a; border-radius: 3px; cursor: grab;
+  }
+  #hscroll-thumb:hover { background: #3a3a6a; }
+  #hscroll-thumb.dragging { background: #e94560; cursor: grabbing; }
+
+  #statusbar {
+    height: 24px; background: #111; font-size: 11px; display: flex; align-items: center;
+    padding: 0 12px; gap: 20px; color: #8be9fd; border-top: 1px solid #2a2a4a; flex-shrink: 0;
+  }
+
+  #toast {
+    position: absolute; top: 12px; right: 12px; background: #2d6a4f; color: #fff;
+    padding: 8px 16px; border-radius: 4px; font-size: 12px; opacity: 0;
+    transition: opacity 0.3s; pointer-events: none; z-index: 10;
+  }
+  #toast.show { opacity: 1; }
+
+  #ghost {
+    position: fixed; pointer-events: none; z-index: 9999; display: none;
+    image-rendering: pixelated; opacity: 0.7;
+    border: 2px solid #fff; border-radius: 2px;
+    box-shadow: 0 0 8px rgba(233,69,96,0.6);
+  }
+
+  #loading {
+    position: absolute; inset: 0; background: #0f0f23; display: flex;
+    justify-content: center; align-items: center; z-index: 100; color: #8be9fd;
+  }
+</style>
+</head>
+<body>
+
+<!-- === LEVEL PICKER SCREEN === -->
+<div id="picker" class="active">
+  <h1>Level Editor</h1>
+  <h2>Select a level to edit</h2>
+  <div id="picker-list"></div>
+  <button class="pick-back" onclick="window.location.href='index.html'">Back to Game</button>
+</div>
+
+<!-- === EDITOR SCREEN === -->
+<div id="editor">
+  <div id="sidebar">
+    <h3 id="editor-title">Editing: -</h3>
+    <h3>Tile Palette</h3>
+    <div id="sel-info">
+      <canvas id="sel-preview" width="32" height="32"></canvas>
+      <span id="sel-label">Tile ID: 49</span>
+    </div>
+    <div id="palette-scroll"><div id="palette"></div></div>
+
+    <h3>Level Size</h3>
+    <div class="btn-row">
+      <label style="font-size:10px;display:flex;align-items:center;gap:4px;">W:<input id="inp-w" type="number" value="45" min="10" max="200" style="width:40px;background:#1a1a2e;border:1px solid #2a2a4a;color:#fff;padding:2px;border-radius:2px;font-size:11px;"></label>
+      <label style="font-size:10px;display:flex;align-items:center;gap:4px;">H:<input id="inp-h" type="number" value="10" min="5" max="50" style="width:40px;background:#1a1a2e;border:1px solid #2a2a4a;color:#fff;padding:2px;border-radius:2px;font-size:11px;"></label>
+      <button class="btn" id="btn-resize">Apply</button>
+    </div>
+
+    <h3>Actions</h3>
+    <div class="btn-row">
+      <button class="btn" id="btn-undo">Undo</button>
+      <button class="btn" id="btn-redo">Redo</button>
+      <button class="btn red" id="btn-clear">Clear</button>
+    </div>
+
+    <h3>File</h3>
+    <div class="btn-row">
+      <button class="btn green" id="btn-save">Save</button>
+      <button class="btn green" id="btn-export">Export JSON</button>
+      <button class="btn blue" id="btn-import">Import JSON</button>
+    </div>
+
+    <div style="padding:6px 10px;border-top:1px solid #2a2a4a;">
+      <button class="btn red" id="btn-exit" style="width:100%;text-align:center;">Exit to Menu</button>
+    </div>
+
+    <div style="padding:6px 10px;font-size:9px;color:#444;border-top:1px solid #2a2a4a;">
+      Drag tile onto grid or click to place. Right-click to erase. Scroll to pan.
+    </div>
+  </div>
+
+  <div id="canvas-wrap">
+    <div id="toolbar">
+      <button class="tool-btn active-build" id="btn-build" title="Place solid/collision blocks">Build</button>
+      <button class="tool-btn" id="btn-paint" title="Place non-collision decoration tiles">Paint</button>
+      <button class="tool-btn" id="btn-erase" title="Erase tiles">Erase</button>
+      <div id="toolbar-sep"></div>
+      <span id="toolbar-mode">Mode: Build (solid)</span>
+    </div>
+    <canvas id="editor-canvas"></canvas>
+    <div id="hscroll-wrap">
+      <div id="hscroll-track"><div id="hscroll-thumb"></div></div>
+    </div>
+    <div id="statusbar">
+      <span id="st-pos">Grid: -</span>
+      <span id="st-tile">Tile: 49</span>
+      <span id="st-count">Placed: 0</span>
+    </div>
+    <div id="toast"></div>
+    <div id="loading">Loading assets...</div>
+  </div>
+</div>
+
+<canvas id="ghost" width="54" height="54"></canvas>
+<input type="file" id="file-input" accept=".json" style="display:none">
+
+<script>
+const TS = 18, SC = 3, RT = TS * SC;
+const TCOLS = 20, TROWS = 9, TSPACE = 1, GID0 = 28, NTILES = TCOLS * TROWS;
+const BGTS = 24, BGC = 8, BGS = 1;
+const TILE_URL = 'kenney_pixel-platformer/Tilemap/tilemap.png';
+const BG_URL = 'kenney_pixel-platformer/Tilemap/tilemap-backgrounds.png';
+
+const cv = document.getElementById('editor-canvas');
+const cx = cv.getContext('2d');
+const ghostCv = document.getElementById('ghost');
+const ghostCx = ghostCv.getContext('2d');
+
+let tileImg, bgImg;
+let levelW = 45, levelH = 10;
+let map = mk(levelW, levelH);
+let selId = 49;
+let camX = 0, camY = 0;
+let mgx = -1, mgy = -1;
+let dragging = false, painting = false, panning = false;
+let panX0 = 0, panY0 = 0, camX0 = 0, camY0 = 0;
+let editingName = '';
+let editMode = 'build';
+
+const SOLID_TILES = new Set([33,52,53,169,170,171,109,110,111,49,50,51,60,80,100,76,78,181,182,183]);
+const DEFAULT_BUILD = 49;
+const DEFAULT_PAINT = 28;
+
+function mk(w, h) { return Array.from({length: h}, () => new Array(w).fill(0)); }
+
+// === BUILT-IN LEVEL BUILDERS (mirrored from levels.js) ===
+const GS = { tl: 49, tm: 50, tr: 51, fill: [169, 170, 171] };
+const SS = { tl: 109, tm: 110, tr: 111, fill: [109, 110, 111] };
+const WS = { tl: 60, tm: 80, tr: 100, fill: [80] };
+
+function _plat(m, x, y, w, s) {
+  if (x < 0 || y < 0 || w < 1) return;
+  const mw = m[0].length, mh = m.length, ex = Math.min(x + w, mw);
+  m[y][x] = s.tl;
+  for (let i = x + 1; i < ex - 1; i++) m[y][i] = s.tm;
+  if (w > 1) m[y][ex - 1] = s.tr; else m[y][x] = s.tm;
+  for (let r = y + 1; r < mh; r++) { m[r][x] = 169; for (let i = x + 1; i < ex - 1; i++) m[r][i] = 170; if (w > 1) m[r][ex - 1] = 171; else m[r][x] = 170; }
+}
+function _flt(m, x, y, w) { if (w <= 2) { m[y][x] = 76; if (w > 1) m[y][x + 1] = 78; } else { m[y][x] = 181; for (let i = 1; i < w - 1; i++) m[y][x + i] = 182; m[y][x + w - 1] = 183; } }
+function _cn(m, x, y, n) { const ids = [179, 180]; for (let i = 0; i < n; i++) if (m[y]) m[y][x + i] = ids[i % 2]; }
+function _sp(m, x, y, n) { for (let i = 0; i < (n||1); i++) if (m[y]) m[y][x + i] = 96; }
+function _hr(m, x, y) { if (m[y]) m[y][x] = 72; }
+function _ext(m, x, y) { if (m[y]) m[y][x] = 178; }
+function _dco(m, x, y) { if (!m[y]) return; m[y][x] = [154,155,156,157][x % 4]; }
+function _tree(m, x, y) { if (m[y+6]) { m[y][x]=45;m[y+1][x]=46;m[y+2][x]=47;m[y+3][x]=65;m[y+4][x]=66;m[y+5][x]=67;m[y+6][x]=85;m[y+7][x]=86;m[y+8][x]=87; } }
+function _ladder(m, x, y, h) { for (let i = 0; i < h; i++) { const r = y - i; if (r < 0 || !m[r]) continue; m[r][x] = i === 0 ? 79 : 99; } }
+function _rope(m, x, y, len) { if (!m[y]) return; for (let i = 0; i < len; i++) { const c = x + i; if (c >= m[0].length) continue; if (i===0) m[y][c]=118; else if (i===len-1) m[y][c]=120; else m[y][c]=119; } }
+function _spr(m, x, y) { if (m[y]) m[y][x] = 135; }
+
+function buildBuiltin(idx) {
+  const builders = [
+    function() {
+      const W=45,H=10,m=mk(W,H);
+      _plat(m,0,8,12,GS);_plat(m,15,8,8,GS);_plat(m,25,8,6,GS);_plat(m,33,8,12,GS);
+      _sp(m,23,8);_flt(m,5,6,3);_flt(m,11,5,3);_flt(m,17,6,3);_flt(m,21,5,2);_flt(m,27,6,3);_flt(m,31,5,2);_flt(m,35,4,3);_flt(m,39,6,3);
+      _cn(m,6,5,3);_cn(m,12,4,2);_cn(m,18,5,3);_cn(m,28,5,3);_cn(m,36,3,2);
+      _hr(m,31,4);_ladder(m,13,8,2);_spr(m,30,7);
+      _tree(m,1,5);_tree(m,3,4);_dco(m,8,7);_dco(m,16,7);_dco(m,26,7);_ext(m,43,7);
+      return {name:'Green Meadows',w:W,h:H,map:m};
+    },
+    function() {
+      const W=50,H=10,m=mk(W,H);
+      _plat(m,0,8,9,SS);_plat(m,12,8,7,SS);_plat(m,21,8,5,SS);_plat(m,28,8,6,SS);_plat(m,36,8,5,SS);_plat(m,43,8,7,SS);
+      _sp(m,19,8);_sp(m,20,8);_sp(m,34,8);_sp(m,35,8);
+      _flt(m,4,6,3);_flt(m,9,4,3);_flt(m,14,6,3);_flt(m,18,5,2);_flt(m,23,5,3);_flt(m,27,3,3);_flt(m,30,6,2);_flt(m,34,4,2);_flt(m,38,6,3);_flt(m,42,5,3);_flt(m,46,4,2);
+      _cn(m,5,5,3);_cn(m,10,3,2);_cn(m,15,5,3);_cn(m,24,4,3);_cn(m,28,2,2);_cn(m,39,5,3);_cn(m,47,3,2);
+      _hr(m,27,2);_hr(m,42,4);_ladder(m,10,8,3);_rope(m,32,2,5);_spr(m,37,7);
+      _dco(m,2,7);_dco(m,13,7);_dco(m,29,7);_ext(m,48,7);
+      return {name:'Rocky Caves',w:W,h:H,map:m};
+    },
+    function() {
+      const W=55,H=10,m=mk(W,H);
+      _plat(m,0,8,8,WS);_plat(m,11,8,6,WS);_plat(m,19,8,5,WS);_plat(m,26,8,6,WS);_plat(m,34,8,4,WS);_plat(m,40,8,5,WS);_plat(m,47,8,8,WS);
+      _sp(m,9,8);_sp(m,10,8);_sp(m,17,8);_sp(m,18,8);_sp(m,24,8);_sp(m,25,8);_sp(m,32,8);_sp(m,33,8);_sp(m,38,8);_sp(m,39,8);
+      _flt(m,3,6,2);_flt(m,7,4,3);_flt(m,12,6,3);_flt(m,16,5,2);_flt(m,20,6,3);_flt(m,25,4,2);_flt(m,28,6,3);_flt(m,32,5,3);_flt(m,36,6,2);_flt(m,39,3,3);_flt(m,43,5,3);_flt(m,48,6,3);_flt(m,52,4,2);
+      _cn(m,4,5,2);_cn(m,8,3,3);_cn(m,13,5,3);_cn(m,21,5,3);_cn(m,29,5,3);_cn(m,40,2,3);_cn(m,44,4,2);_cn(m,49,5,3);
+      _hr(m,7,3);_hr(m,25,3);_hr(m,39,2);
+      _ladder(m,14,8,3);_ladder(m,30,8,2);_rope(m,21,3,5);_spr(m,37,7);_spr(m,48,7);
+      _tree(m,1,5);_tree(m,4,4);_dco(m,12,7);_dco(m,20,7);_dco(m,27,7);_dco(m,41,7);_dco(m,48,7);_ext(m,53,7);
+      return {name:'Haunted Woods',w:W,h:H,map:m};
+    },
+    function() {
+      const W=60,H=10,m=mk(W,H);
+      _plat(m,0,8,7,SS);_plat(m,10,8,5,SS);_plat(m,17,8,4,SS);_plat(m,23,8,5,SS);_plat(m,30,8,4,SS);_plat(m,36,8,5,SS);_plat(m,43,8,4,SS);_plat(m,49,8,11,SS);
+      _sp(m,7,8);_sp(m,8,8);_sp(m,15,8);_sp(m,16,8);_sp(m,21,8);_sp(m,22,8);_sp(m,28,8);_sp(m,29,8);_sp(m,34,8);_sp(m,35,8);_sp(m,41,8);_sp(m,42,8);_sp(m,47,8);_sp(m,48,8);
+      _flt(m,3,6,3);_flt(m,7,4,2);_flt(m,11,6,3);_flt(m,15,5,2);_flt(m,19,6,3);_flt(m,23,4,2);_flt(m,26,6,3);_flt(m,30,5,3);_flt(m,34,3,2);_flt(m,38,6,3);_flt(m,42,5,2);_flt(m,45,6,3);_flt(m,49,4,3);_flt(m,53,6,3);_flt(m,57,5,2);
+      _cn(m,4,5,3);_cn(m,8,3,2);_cn(m,12,5,3);_cn(m,20,5,3);_cn(m,27,5,3);_cn(m,31,4,3);_cn(m,35,2,2);_cn(m,39,5,3);_cn(m,50,3,3);_cn(m,54,5,3);
+      _hr(m,7,3);_hr(m,23,3);_hr(m,34,2);_hr(m,49,3);
+      _ladder(m,16,8,3);_ladder(m,42,8,2);_rope(m,26,3,5);_rope(m,45,2,4);_spr(m,29,7);_spr(m,53,7);
+      _dco(m,2,7);_dco(m,11,7);_dco(m,19,7);_dco(m,26,7);_dco(m,38,7);_dco(m,45,7);_dco(m,53,7);_ext(m,58,7);
+      return {name:'Dark Caves',w:W,h:H,map:m};
+    },
+    function() {
+      const W=66,H=10,m=mk(W,H);
+      _plat(m,0,8,6,GS);_plat(m,9,8,5,SS);_plat(m,16,8,4,WS);_plat(m,22,8,5,SS);_plat(m,29,8,4,GS);_plat(m,35,8,4,WS);_plat(m,41,8,5,SS);_plat(m,48,8,4,GS);_plat(m,54,8,12,GS);
+      _sp(m,6,8);_sp(m,7,8);_sp(m,14,8);_sp(m,15,8);_sp(m,20,8);_sp(m,21,8);_sp(m,27,8);_sp(m,28,8);_sp(m,33,8);_sp(m,34,8);_sp(m,39,8);_sp(m,40,8);_sp(m,46,8);_sp(m,47,8);_sp(m,52,8);_sp(m,53,8);
+      _flt(m,2,6,2);_flt(m,5,4,3);_flt(m,9,6,3);_flt(m,13,5,2);_flt(m,17,6,2);_flt(m,20,4,3);_flt(m,24,6,3);_flt(m,28,5,2);_flt(m,31,6,2);_flt(m,34,4,2);_flt(m,37,6,3);_flt(m,41,5,3);_flt(m,45,3,2);_flt(m,48,6,3);_flt(m,52,5,2);_flt(m,55,4,3);_flt(m,59,6,3);_flt(m,63,5,2);
+      _cn(m,3,5,2);_cn(m,6,3,3);_cn(m,10,5,3);_cn(m,18,5,2);_cn(m,21,3,3);_cn(m,25,5,3);_cn(m,32,5,2);_cn(m,38,5,3);_cn(m,42,4,3);_cn(m,49,5,3);_cn(m,56,3,3);_cn(m,60,5,3);
+      _hr(m,5,3);_hr(m,20,3);_hr(m,34,3);_hr(m,45,2);_hr(m,55,3);
+      _ladder(m,8,8,3);_ladder(m,28,8,2);_ladder(m,47,8,3);_rope(m,14,3,5);_rope(m,38,2,5);_rope(m,56,3,4);
+      _spr(m,21,7);_spr(m,41,7);_spr(m,59,7);
+      _tree(m,1,5);_dco(m,10,7);_dco(m,17,7);_dco(m,24,7);_dco(m,31,7);_dco(m,38,7);_dco(m,42,7);_dco(m,49,7);_dco(m,56,7);_ext(m,64,7);
+      return {name:'Final Quest',w:W,h:H,map:m};
+    }
+  ];
+  return builders[idx]();
+}
+
+function seedLevels() {
+  const existing = getLevels();
+  let changed = false;
+  for (let i = 0; i < 5; i++) {
+    const lvl = buildBuiltin(i);
+    if (existing.find(l => l.name === lvl.name)) continue;
+    existing.push({ name: lvl.name, w: lvl.w, h: lvl.h, map: lvl.map, builtin: true, created: 0 });
+    changed = true;
+  }
+  if (changed) saveLevels(existing);
+}
+
+const hist = {
+  s: [], p: -1,
+  snap() { this.s = this.s.slice(0, this.p + 1); this.s.push(map.map(r=>r.slice())); this.p = this.s.length - 1; if (this.s.length > 80) { this.s.shift(); this.p--; } },
+  undo() { if (this.p <= 0) return; this.p--; map = this.s[this.p].map(r=>r.slice()); },
+  redo() { if (this.p >= this.s.length - 1) return; this.p++; map = this.s[this.p].map(r=>r.slice()); },
+  reset() { this.s = []; this.p = -1; this.snap(); }
+};
+
+function loadImg(src) { return new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(src); i.src = src; }); }
+
+// === LEVEL PICKER ===
+function getLevels() {
+  try { const r = localStorage.getItem('pqCustomLevels'); return r ? JSON.parse(r) : []; } catch(e) { return []; }
+}
+function saveLevels(levels) { localStorage.setItem('pqCustomLevels', JSON.stringify(levels)); }
+
+function buildPicker() {
+  seedLevels();
+  const list = document.getElementById('picker-list');
+  list.innerHTML = '';
+  const levels = getLevels();
+
+  // New level
+  const newRow = document.createElement('div');
+  newRow.className = 'pick-row pick-new';
+  newRow.innerHTML = '<span class="pick-icon">+</span><span class="pick-name">New Empty Level</span><span class="pick-size"></span>';
+  newRow.onclick = () => startEditor('My Level', 45, 10, mk(45, 10));
+  list.appendChild(newRow);
+
+  // Existing levels
+  for (const l of levels) {
+    const row = document.createElement('div');
+    row.className = 'pick-row';
+    const icon = l.builtin ? '\u25C6' : '\u2605';
+    const tileCount = l.map ? l.map.flat().filter(t => t > 0).length : 0;
+    row.innerHTML = `<span class="pick-icon">${icon}</span><span class="pick-name" style="color:${l.builtin ? '#8be9fd' : '#ffd700'}">${l.name}</span><span class="pick-size">${l.w}x${l.h} | ${tileCount} tiles</span>`;
+    row.onclick = () => startEditor(l.name, l.w, l.h, l.map.map(r => r.slice()));
+    list.appendChild(row);
+  }
+}
+
+function startEditor(name, w, h, mapData) {
+  editingName = name;
+  levelW = w; levelH = h;
+  map = mapData;
+  document.getElementById('inp-w').value = w;
+  document.getElementById('inp-h').value = h;
+  document.getElementById('editor-title').textContent = 'Editing: ' + name;
+
+  document.getElementById('picker').classList.remove('active');
+  document.getElementById('editor').classList.add('active');
+
+  resize();
+  camX = -100; camY = -100;
+  hist.reset(); updCount(); syncHScroll();
+}
+
+function showPicker() {
+  document.getElementById('editor').classList.remove('active');
+  document.getElementById('picker').classList.add('active');
+  buildPicker();
+}
+
+// === CANVAS ===
+function resize() {
+  const w = document.getElementById('canvas-wrap');
+  if (!w) return;
+  cv.width = w.clientWidth;
+  cv.height = w.clientHeight - 42;
+  syncHScroll();
+}
+
+function s2w(sx, sy) { return { x: sx + camX, y: sy + camY }; }
+
+function getTileSrcRect(id) {
+  const i = id - GID0;
+  return { sx: (i % TCOLS) * (TS + TSPACE), sy: Math.floor(i / TCOLS) * (TS + TSPACE) };
+}
+
+// === PALETTE ===
+function buildPalette() {
+  const pal = document.getElementById('palette');
+  pal.innerHTML = '';
+  for (let i = 0; i < NTILES; i++) {
+    const id = i + GID0;
+    const c = document.createElement('canvas');
+    c.width = 32; c.height = 32; c.className = 'pal-tile' + (id === selId ? ' sel' : '');
+    c.dataset.id = id;
+    const x = c.getContext('2d');
+    x.imageSmoothingEnabled = false;
+    const r = getTileSrcRect(id);
+    x.drawImage(tileImg, r.sx, r.sy, TS, TS, 0, 0, 32, 32);
+    c.addEventListener('mousedown', onPalDown);
+    pal.appendChild(c);
+  }
+  updSelPreview();
+}
+
+function selectTile(id) {
+  selId = id;
+  document.querySelectorAll('.pal-tile').forEach(t => t.classList.toggle('sel', +t.dataset.id === id));
+  updSelPreview();
+  document.getElementById('st-tile').textContent = 'Tile: ' + id;
+}
+
+function updSelPreview() {
+  const c = document.getElementById('sel-preview');
+  const x = c.getContext('2d');
+  x.imageSmoothingEnabled = false; x.clearRect(0, 0, 32, 32);
+  const r = getTileSrcRect(selId);
+  x.drawImage(tileImg, r.sx, r.sy, TS, TS, 0, 0, 32, 32);
+  document.getElementById('sel-label').textContent = 'Tile ID: ' + selId;
+}
+
+function onPalDown(e) {
+  e.preventDefault();
+  selectTile(+e.currentTarget.dataset.id);
+  dragging = true;
+  ghostCv.width = RT; ghostCv.height = RT;
+  ghostCx.imageSmoothingEnabled = false;
+  const r = getTileSrcRect(selId);
+  ghostCx.drawImage(tileImg, r.sx, r.sy, TS, TS, 0, 0, RT, RT);
+  ghostCv.style.display = 'block';
+  moveGhost(e.clientX, e.clientY);
+}
+
+function moveGhost(mx, my) { ghostCv.style.left = (mx - RT/2) + 'px'; ghostCv.style.top = (my - RT/2) + 'px'; }
+
+// === GLOBAL MOUSE ===
+document.addEventListener('mousemove', (e) => {
+  if (!dragging) return;
+  moveGhost(e.clientX, e.clientY);
+  const rect = cv.getBoundingClientRect();
+  const w = s2w(e.clientX - rect.left, e.clientY - rect.top);
+  mgx = Math.floor(w.x / RT); mgy = Math.floor(w.y / RT);
+});
+
+document.addEventListener('mouseup', (e) => {
+  if (!dragging) return;
+  dragging = false; ghostCv.style.display = 'none';
+  const rect = cv.getBoundingClientRect();
+  const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+  if (sx >= 0 && sy >= 0 && sx < rect.width && sy < rect.height) {
+    const w = s2w(sx, sy);
+    const gx = Math.floor(w.x / RT), gy = Math.floor(w.y / RT);
+    if (gx >= 0 && gx < levelW && gy >= 0 && gy < levelH) { hist.snap(); map[gy][gx] = selId; updCount(); }
+  }
+});
+
+// === CANVAS MOUSE ===
+cv.addEventListener('mousedown', (e) => {
+  if (dragging) return;
+  const rect = cv.getBoundingClientRect();
+  const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+  if (e.button === 1) { panning = true; panX0 = e.clientX; panY0 = e.clientY; camX0 = camX; camY0 = camY; return; }
+  if (e.button === 2 || editMode === 'erase') {
+    const w = s2w(sx, sy); const gx = Math.floor(w.x / RT), gy = Math.floor(w.y / RT);
+    if (gx >= 0 && gx < levelW && gy >= 0 && gy < levelH) { hist.snap(); map[gy][gx] = 0; painting = true; updCount(); }
+    return;
+  }
+  if (e.button === 0) {
+    const w = s2w(sx, sy); const gx = Math.floor(w.x / RT), gy = Math.floor(w.y / RT);
+    if (gx >= 0 && gx < levelW && gy >= 0 && gy < levelH) { hist.snap(); map[gy][gx] = selId; painting = true; updCount(); }
+  }
+});
+
+cv.addEventListener('mousemove', (e) => {
+  const rect = cv.getBoundingClientRect();
+  const w = s2w(e.clientX - rect.left, e.clientY - rect.top);
+  mgx = Math.floor(w.x / RT); mgy = Math.floor(w.y / RT);
+  if (panning) { camX = camX0 - (e.clientX - panX0); camY = camY0 - (e.clientY - panY0); syncHScroll(); return; }
+  if (painting && mgx >= 0 && mgx < levelW && mgy >= 0 && mgy < levelH) {
+    if (editMode === 'erase') { if (map[mgy][mgx] !== 0) { map[mgy][mgx] = 0; updCount(); } }
+    else { if (map[mgy][mgx] !== selId) { map[mgy][mgx] = selId; updCount(); } }
+  }
+  document.getElementById('st-pos').textContent = 'Grid: ' + mgx + ', ' + mgy;
+});
+
+cv.addEventListener('mouseup', () => { panning = false; painting = false; });
+cv.addEventListener('mouseleave', () => { panning = false; painting = false; });
+cv.addEventListener('contextmenu', e => e.preventDefault());
+cv.addEventListener('wheel', (e) => { e.preventDefault(); const s = RT; if (e.shiftKey) camY += e.deltaY > 0 ? s : -s; else { camX += e.deltaY > 0 ? s : -s; syncHScroll(); } }, { passive: false });
+
+// Keyboard
+const keys = {};
+window.addEventListener('keydown', (e) => {
+  keys[e.code] = true;
+  if (e.ctrlKey) { if (e.code === 'KeyZ') { e.preventDefault(); hist.undo(); } if (e.code === 'KeyY') { e.preventDefault(); hist.redo(); } return; }
+  const ps = RT * 2;
+  if (e.code === 'ArrowLeft') { camX -= ps; syncHScroll(); }
+  if (e.code === 'ArrowRight') { camX += ps; syncHScroll(); }
+  if (e.code === 'ArrowUp') camY -= ps;
+  if (e.code === 'ArrowDown') camY += ps;
+});
+window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+window.addEventListener('resize', resize);
+
+// === HSCROLL ===
+const hThumb = document.getElementById('hscroll-thumb'), hTrack = document.getElementById('hscroll-track'), hWrap = document.getElementById('hscroll-wrap');
+let hDrag = false, hDragX0 = 0, hDragCamX0 = 0;
+
+function syncHScroll() {
+  const totalW = levelW * RT, viewW = cv.width;
+  if (totalW <= viewW) { hThumb.style.left = '0px'; hThumb.style.width = '100%'; return; }
+  const trackW = hTrack.clientWidth, thumbW = Math.max(20, (viewW / totalW) * trackW), maxCam = totalW - viewW;
+  hThumb.style.width = thumbW + 'px'; hThumb.style.left = (Math.max(0, Math.min(1, camX / maxCam)) * (trackW - thumbW)) + 'px';
+}
+
+hWrap.addEventListener('mousedown', (e) => {
+  e.preventDefault(); const rect = hTrack.getBoundingClientRect();
+  const totalW = levelW * RT, viewW = cv.width, maxCam = Math.max(1, totalW - viewW);
+  const trackW = hTrack.clientWidth, thumbW = Math.max(20, (viewW / totalW) * trackW), clickX = e.clientX - rect.left;
+  if (clickX >= parseFloat(hThumb.style.left) && clickX <= parseFloat(hThumb.style.left) + thumbW) {
+    hDrag = true; hDragX0 = e.clientX; hDragCamX0 = camX; hThumb.classList.add('dragging');
+  } else {
+    camX = Math.max(0, Math.min(maxCam, ((clickX - thumbW/2) / (trackW - thumbW)) * maxCam)); syncHScroll();
+    hDrag = true; hDragX0 = e.clientX; hDragCamX0 = camX; hThumb.classList.add('dragging');
+  }
+});
+document.addEventListener('mousemove', (e) => {
+  if (!hDrag) return;
+  const totalW = levelW * RT, viewW = cv.width, maxCam = Math.max(1, totalW - viewW);
+  const trackW = hTrack.clientWidth, thumbW = Math.max(20, (viewW / totalW) * trackW);
+  camX = Math.max(0, Math.min(maxCam, hDragCamX0 + ((e.clientX - hDragX0) / (trackW - thumbW)) * maxCam)); syncHScroll();
+});
+document.addEventListener('mouseup', () => { if (hDrag) { hDrag = false; hThumb.classList.remove('dragging'); } });
+
+// === RENDER ===
+function render() {
+  cx.clearRect(0, 0, cv.width, cv.height); cx.imageSmoothingEnabled = false;
+  const cx0 = Math.round(camX), cy0 = Math.round(camY);
+  drawBG(cx0, cy0);
+  cx.save(); cx.translate(-cx0, -cy0);
+
+  const sc = Math.max(0, Math.floor(cx0 / RT)), ec = Math.min(levelW - 1, Math.ceil((cx0 + cv.width) / RT));
+  const sr = Math.max(0, Math.floor(cy0 / RT)), er = Math.min(levelH - 1, Math.ceil((cy0 + cv.height) / RT));
+  for (let r = sr; r <= er; r++) for (let c = sc; c <= ec; c++) {
+    const x = c * RT, y = r * RT, id = map[r][c];
+    if (id > 0) { const rc = getTileSrcRect(id); cx.drawImage(tileImg, rc.sx, rc.sy, TS, TS, x, y, RT, RT); }
+    cx.strokeStyle = id > 0 ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.12)';
+    cx.lineWidth = 1; cx.strokeRect(x + 0.5, y + 0.5, RT - 1, RT - 1);
+  }
+  cx.strokeStyle = 'rgba(255,100,100,0.5)'; cx.lineWidth = 2; cx.strokeRect(0, 0, levelW * RT, levelH * RT);
+
+  if (!dragging && mgx >= 0 && mgx < levelW && mgy >= 0 && mgy < levelH) {
+    cx.globalAlpha = 0.4; const rc = getTileSrcRect(selId); cx.drawImage(tileImg, rc.sx, rc.sy, TS, TS, mgx * RT, mgy * RT, RT, RT); cx.globalAlpha = 1;
+    cx.strokeStyle = '#fff'; cx.lineWidth = 2; cx.strokeRect(mgx * RT, mgy * RT, RT, RT);
+  }
+  if (dragging && mgx >= 0 && mgx < levelW && mgy >= 0 && mgy < levelH) {
+    cx.strokeStyle = '#e94560'; cx.lineWidth = 3; cx.strokeRect(mgx * RT, mgy * RT, RT, RT);
+    cx.fillStyle = 'rgba(233,69,96,0.2)'; cx.fillRect(mgx * RT, mgy * RT, RT, RT);
+  }
+  cx.restore();
+  requestAnimationFrame(render);
+}
+
+function drawBG(cx0, cy0) {
+  if (!bgImg) return;
+  const tw = BGTS * SC, midR = Math.floor(cv.height * 0.4 / tw), gndR = Math.floor(cv.height * 0.65 / tw);
+  const tRows = Math.ceil(cv.height / tw) + 2, hCnt = Math.ceil(cv.width / tw) + 3;
+  cx.fillStyle = '#1a2a1a'; cx.fillRect(0, 0, cv.width, cv.height);
+  for (let r = -1; r < tRows; r++) for (let c = -2; c < hCnt; c++) {
+    const px = r < midR ? 0.03 : r < gndR ? 0.06 : 0.1;
+    const off = (((cx0 * px) % tw) + tw) % tw, x = Math.floor(c * tw - off), y = r * tw;
+    let ti; if (r === midR) ti = 8 + ((c % 4) + 400) % 4; else if (r >= gndR) ti = 16 + ((c % 4) + 400) % 4; else ti = ((c % 4) + 400) % 4;
+    cx.drawImage(bgImg, (ti % BGC) * (BGTS + BGS), Math.floor(ti / BGC) * (BGTS + BGS), BGTS, BGTS, x, y, tw + 1, tw + 1);
+  }
+}
+
+// === SAVE/LOAD ===
+function saveCurrentLevel() {
+  const levels = getLevels();
+  const idx = levels.findIndex(l => l.name === editingName);
+  const entry = { name: editingName, w: levelW, h: levelH, map, created: Date.now() };
+  if (idx >= 0) { if (levels[idx].builtin) entry.builtin = true; levels[idx] = entry; }
+  else levels.push(entry);
+  saveLevels(levels);
+  toast('Saved "' + editingName + '"!');
+}
+
+function toast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 2000); }
+function updCount() { let n = 0; for (const r of map) for (const t of r) if (t) n++; document.getElementById('st-count').textContent = 'Placed: ' + n; }
+
+function setMode(mode) {
+  editMode = mode;
+  document.getElementById('btn-build').className = 'tool-btn' + (mode === 'build' ? ' active-build' : '');
+  document.getElementById('btn-paint').className = 'tool-btn' + (mode === 'paint' ? ' active-paint' : '');
+  document.getElementById('btn-erase').className = 'tool-btn' + (mode === 'erase' ? ' active-erase' : '');
+  const labels = { build: 'Build (solid)', paint: 'Paint (decoration)', erase: 'Erase' };
+  document.getElementById('toolbar-mode').textContent = 'Mode: ' + labels[mode];
+  cv.style.cursor = mode === 'erase' ? 'crosshair' : 'default';
+  if (mode === 'build') selectTile(DEFAULT_BUILD);
+  else if (mode === 'paint') selectTile(DEFAULT_PAINT);
+}
+
+function setupUI() {
+  document.getElementById('btn-build').onclick = () => setMode('build');
+  document.getElementById('btn-paint').onclick = () => setMode('paint');
+  document.getElementById('btn-erase').onclick = () => setMode('erase');
+  setMode('build');
+  document.getElementById('btn-undo').onclick = () => hist.undo();
+  document.getElementById('btn-redo').onclick = () => hist.redo();
+  document.getElementById('btn-clear').onclick = () => { hist.snap(); map = mk(levelW, levelH); updCount(); };
+  document.getElementById('btn-exit').onclick = () => showPicker();
+  document.getElementById('btn-save').onclick = () => saveCurrentLevel();
+  document.getElementById('btn-export').onclick = () => {
+    const b = new Blob([JSON.stringify({ name: editingName, w: levelW, h: levelH, map }, null, 2)], {type:'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = editingName.replace(/\s+/g, '_') + '.json'; a.click(); toast('Exported!');
+  };
+  document.getElementById('btn-import').onclick = () => {
+    const inp = document.getElementById('file-input');
+    inp.onchange = (e) => { const f = e.target.files[0]; if (!f) return;
+      const rd = new FileReader(); rd.onload = (ev) => { try { const o = JSON.parse(ev.target.result); editingName = o.name || f.name.replace('.json',''); levelW = o.w; levelH = o.h; document.getElementById('inp-w').value = levelW; document.getElementById('inp-h').value = levelH; map = o.map.map(r => r.slice()); hist.reset(); updCount(); document.getElementById('editor-title').textContent = 'Editing: ' + editingName; toast('Imported!'); } catch(e) { toast('Failed.'); } };
+      rd.readAsText(f); inp.value = '';
+    }; inp.click();
+  };
+  document.getElementById('btn-resize').onclick = () => {
+    const nw = +document.getElementById('inp-w').value || 45, nh = +document.getElementById('inp-h').value || 10;
+    hist.snap(); const nm = mk(nw, nh);
+    for (let r = 0; r < Math.min(nh, levelH); r++) for (let c = 0; c < Math.min(nw, levelW); c++) nm[r][c] = map[r][c];
+    levelW = nw; levelH = nh; map = nm; updCount(); toast('Resized to ' + nw + 'x' + nh);
+  };
+}
+
+// === INIT ===
+async function init() {
+  try { [tileImg, bgImg] = await Promise.all([loadImg(TILE_URL), loadImg(BG_URL)]); }
+  catch(e) { document.getElementById('loading').textContent = 'Failed to load assets. Run: npx http-server'; return; }
+  document.getElementById('loading').style.display = 'none';
+  buildPalette();
+  setupUI();
+  buildPicker();
+  requestAnimationFrame(render);
+}
+
+init();
+</script>
+</body>
+</html>

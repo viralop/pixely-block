@@ -72,6 +72,12 @@ export class Input {
     get jump() {
         return this.isDown('ArrowUp') || this.isDown('KeyW') || this.isDown('Space') || this.touch.jump;
     }
+    get up() {
+        return this.isDown('ArrowUp') || this.isDown('KeyW');
+    }
+    get down() {
+        return this.isDown('ArrowDown') || this.isDown('KeyS');
+    }
     get jumpPressed() {
         return this.justPressed('ArrowUp') || this.justPressed('KeyW') || this.justPressed('Space');
     }

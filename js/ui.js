@@ -9,6 +9,8 @@ export class UI {
         this.fontLarge = '20px "Press Start 2P", monospace';
         this.fontTitle = '28px "Press Start 2P", monospace';
         this.menuBlink = 0;
+        this.menuSel = 0;
+        this.menuItems = [];
     }
 
     _text(text, x, y, font, color, align) {
@@ -61,44 +63,72 @@ export class UI {
         this._text(`${levelName}`, infoX - 110, pad + 36, '8px "Press Start 2P"', '#88ccff', 'center');
     }
 
-    renderMenu() {
+    renderMenu(menuSel, menuItems) {
         const ctx = this.ctx;
         ctx.fillStyle = '#0f0f23';
         ctx.fillRect(0, 0, this.w, this.h);
 
         const cx = this.w / 2;
-        this._text('PIXEL QUEST', cx, 120, this.fontTitle, '#ffd700');
-        this._text('A Platformer Adventure', cx, 165, '10px "Press Start 2P"', '#888');
+        this._text('PIXEL QUEST', cx, 60, this.fontTitle, '#ffd700');
+        this._text('A Platformer Adventure', cx, 100, '10px "Press Start 2P"', '#888');
 
-        const chars = [1, 2, 3, 5];
-        ctx.globalAlpha = 0.6;
-        chars.forEach((_, i) => {
-            ctx.fillStyle = i % 2 === 0 ? '#4caf50' : '#2196f3';
-            ctx.fillRect(cx - 140 + i * 80, 210, 50, 50);
-        });
-        ctx.globalAlpha = 1;
+        const startY = 160;
+        const itemH = 36;
 
-        this._box(cx - 180, 290, 360, 140, 'rgba(0,0,0,0.6)', '#4a4a6a');
-        this._text('CONTROLS', cx, 310, '10px "Press Start 2P"', '#aaa');
-        this._text('Arrow Keys / WASD - Move', cx, 335, '8px "Press Start 2P"', '#ccc');
-        this._text('Space / W / Up - Jump', cx, 355, '8px "Press Start 2P"', '#ccc');
-        this._text('J / Z - Attack', cx, 375, '8px "Press Start 2P"', '#ccc');
-        this._text('ESC - Pause', cx, 395, '8px "Press Start 2P"', '#ccc');
+        this.menuItems = menuItems;
+
+        for (let i = 0; i < menuItems.length; i++) {
+            const item = menuItems[i];
+            const y = startY + i * itemH;
+            const isSel = i === menuSel;
+
+            if (item.type === 'header') {
+                this._text(item.label, cx, y + 14, '10px "Press Start 2P"', '#8be9fd');
+                continue;
+            }
+
+            if (isSel) {
+                this._box(cx - 200, y, 400, itemH - 4, 'rgba(233,69,96,0.15)', '#e94560');
+                this._text('\u25B6', cx - 180, y + 16, '12px "Press Start 2P"', '#e94560');
+            }
+
+            let color = isSel ? '#fff' : '#aaa';
+            if (item.type === 'editor') color = isSel ? '#fff' : '#6f6';
+            if (item.type === 'custom') color = isSel ? '#fff' : '#ffd700';
+            this._text(item.label, cx, y + 16, '12px "Press Start 2P"', color);
+        }
+
+        const controlsY = this.h - 80;
+        this._box(cx - 220, controlsY - 10, 440, 60, 'rgba(0,0,0,0.5)', '#2a2a4a');
+        this._text('Up/Down - Select    Enter - Confirm', cx, controlsY + 6, '8px "Press Start 2P"', '#888');
+        this._text('WASD/Arrows - Move   Space/J - Jump/Attack', cx, controlsY + 28, '8px "Press Start 2P"', '#666');
+    }
+
+    renderPause(score, levelName, pauseSel) {
+        const cx = this.w / 2, cy = this.h / 2;
+        this._box(cx - 170, cy - 110, 340, 220, 'rgba(0,0,0,0.92)', '#6a6a8a');
+        this._text('PAUSED', cx, cy - 75, this.fontLarge, '#fff');
+        this._text(`${levelName}`, cx, cy - 40, this.font, '#88ccff');
+        this._text(`Score: ${score}`, cx, cy - 15, this.font, '#ffd700');
+
+        const items = ['Resume', 'Exit to Menu'];
+        const startY = cy + 15;
+        const itemH = 36;
+        for (let i = 0; i < items.length; i++) {
+            const y = startY + i * itemH;
+            const isSel = i === (pauseSel || 0);
+            if (isSel) {
+                this._box(cx - 140, y, 280, itemH - 4, 'rgba(233,69,96,0.15)', '#e94560');
+                this._text('\u25B6', cx - 120, y + 16, '12px "Press Start 2P"', '#e94560');
+            }
+            this._text(items[i], cx, y + 16, '12px "Press Start 2P"', isSel ? '#fff' : '#aaa');
+        }
 
         this.menuBlink += 0.04;
         const alpha = 0.5 + 0.5 * Math.sin(this.menuBlink * 4);
-        ctx.globalAlpha = alpha;
-        this._text('Press ENTER to Start', cx, 480, '14px "Press Start 2P"', '#6f6');
-        ctx.globalAlpha = 1;
-    }
-
-    renderPause(score, levelName) {
-        const cx = this.w / 2, cy = this.h / 2;
-        this._box(cx - 150, cy - 70, 300, 140, 'rgba(0,0,0,0.9)', '#6a6a8a');
-        this._text('PAUSED', cx, cy - 35, this.fontLarge, '#fff');
-        this._text(`${levelName}`, cx, cy, this.font, '#88ccff');
-        this._text(`Score: ${score}`, cx, cy + 25, this.font, '#ffd700');
-        this._text('ESC to Resume', cx, cy + 55, '8px "Press Start 2P"', '#aaa');
+        this.ctx.globalAlpha = alpha;
+        this._text('Up/Down - Select    Enter - Confirm', cx, cy + 95, '8px "Press Start 2P"', '#666');
+        this.ctx.globalAlpha = 1;
     }
 
     renderLevelComplete(levelName, score, bonus) {
