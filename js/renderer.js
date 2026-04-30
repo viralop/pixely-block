@@ -15,6 +15,7 @@ const ASSET_PATHS = {
 };
 
 let sheets = {};
+let bgCanvas = null;
 
 export function isLoaded() {
     return sheets.tiles && sheets.characters && sheets.backgrounds;
@@ -76,39 +77,54 @@ export function drawChar(ctx, charId, screenX, screenY, flipH = false) {
 }
 
 export function drawBgParallax(ctx, canvasW, canvasH, cameraX, cameraY, bgColor) {
-    if (!sheets.backgrounds) {
-        ctx.fillStyle = bgColor;
-        ctx.fillRect(0, 0, canvasW, canvasH);
-        return;
-    }
-
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, canvasW, canvasH);
+    if (!sheets.backgrounds) return;
 
     const bg = sheets.backgrounds;
-    const bw = bg.width;
-    const bh = bg.height;
-    const scale = SCALE * 2;
-    const totalW = bw * scale;
-    const totalH = bh * scale;
-    const offX = -(cameraX * 0.1) % totalW;
-    const offY = -(cameraY * 0.05) % totalH;
+    const bgTileSize = BG_TILE_SIZE;
+    const bgSrcStep = bgTileSize + 1;
+    const bgCols = 8;
+    const s = SCALE;
+    const tw = bgTileSize * s;
+    const hCount = Math.ceil(canvasW / tw) + 3;
 
-    ctx.globalAlpha = 0.6;
-    ctx.imageSmoothingEnabled = false;
-    const cols = Math.ceil(canvasW / totalW) + 2;
-    const rows = Math.ceil(canvasH / totalH) + 2;
+    const midRow = Math.floor(canvasH * 0.4 / tw);
+    const groundRow = Math.floor(canvasH * 0.65 / tw);
+    const totalRows = Math.ceil(canvasH / tw) + 2;
 
-    for (let r = -1; r < rows; r++) {
-        for (let c = -1; c < cols; c++) {
-            ctx.drawImage(
-                bg,
-                0, 0, bw, bh,
-                Math.round(c * totalW + offX),
-                Math.round(r * totalH + offY),
-                totalW + 2, totalH + 2
-            );
+    if (!bgCanvas || bgCanvas.width !== canvasW || bgCanvas.height !== canvasH) {
+        bgCanvas = document.createElement('canvas');
+        bgCanvas.width = canvasW;
+        bgCanvas.height = canvasH;
+    }
+
+    const bctx = bgCanvas.getContext('2d');
+    bctx.clearRect(0, 0, canvasW, canvasH);
+    bctx.imageSmoothingEnabled = false;
+
+    for (let r = -1; r < totalRows; r++) {
+        const y = r * tw;
+        for (let c = -2; c < hCount; c++) {
+            const parallax = r < midRow ? 0.03 : r < groundRow ? 0.06 : 0.1;
+            const rawOff = cameraX * parallax;
+            const off = ((rawOff % tw) + tw) % tw;
+            const x = Math.floor(c * tw - off);
+            let tileIdx;
+            if (r === midRow) {
+                tileIdx = 8 + ((c % 4) + 400) % 4;
+            } else if (r >= groundRow) {
+                tileIdx = 16 + ((c % 4) + 400) % 4;
+            } else {
+                tileIdx = ((c % 4) + 400) % 4;
+            }
+            const sx = (tileIdx % bgCols) * bgSrcStep;
+            const sy = Math.floor(tileIdx / bgCols) * bgSrcStep;
+            bctx.drawImage(bg, sx, sy, bgTileSize, bgTileSize, x, y, tw + 1, tw + 1);
         }
     }
+
+    ctx.globalAlpha = 0.5;
+    ctx.drawImage(bgCanvas, 0, 0);
     ctx.globalAlpha = 1;
 }
