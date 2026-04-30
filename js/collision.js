@@ -62,7 +62,7 @@ export function moveEntity(entity, dx, dy, solidMap, tileW, tileH) {
 }
 
 const SOLID_SET = new Set([
-    32, 33, 52, 53,
+    33, 52, 53,
     169, 170, 171,
     109, 110, 111,
     49, 50, 51,

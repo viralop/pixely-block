@@ -43,7 +43,11 @@ function cn(map, x, y, n) {
 function sp(map, x, y, n = 1) { for (let i = 0; i < n; i++) if (map[y]) map[y][x + i] = 96; }
 function hr(map, x, y) { if (map[y]) map[y][x] = 72; }
 function ext(map, x, y) { if (map[y]) map[y][x] = 178; }
-function dco(map, x, y, id) { if (map[y]) map[y][x] = id || 32; }
+function dco(map, x, y) {
+    if (!map[y]) return;
+    const ids = [154, 155, 156, 157];
+    map[y][x] = ids[x % ids.length];
+}
 function tree(map, x, y) {
     if (map[y + 6]) {
         map[y][x] = 45; map[y + 1][x] = 46; map[y + 2][x] = 47;
@@ -88,7 +92,7 @@ function buildLevel1() {
     tree(map, 3, 4);
     dco(map, 8, 7);
     dco(map, 16, 7);
-    dco(map, 26, 7, 38);
+    dco(map, 26, 7);
 
     ext(map, 43, 7);
 
@@ -141,9 +145,9 @@ function buildLevel2() {
     hr(map, 27, 2);
     hr(map, 42, 4);
 
-    dco(map, 2, 7, 38);
+    dco(map, 2, 7);
     dco(map, 13, 7);
-    dco(map, 29, 7, 38);
+    dco(map, 29, 7);
 
     ext(map, 48, 7);
 
@@ -211,11 +215,11 @@ function buildLevel3() {
 
     tree(map, 1, 5);
     tree(map, 4, 4);
-    dco(map, 12, 7, 38);
+    dco(map, 12, 7);
     dco(map, 20, 7);
-    dco(map, 27, 7, 38);
+    dco(map, 27, 7);
     dco(map, 41, 7);
-    dco(map, 48, 7, 38);
+    dco(map, 48, 7);
 
     ext(map, 53, 7);
 
@@ -292,13 +296,13 @@ function buildLevel4() {
     hr(map, 34, 2);
     hr(map, 49, 3);
 
-    dco(map, 2, 7, 38);
+    dco(map, 2, 7);
     dco(map, 11, 7);
-    dco(map, 19, 7, 38);
+    dco(map, 19, 7);
     dco(map, 26, 7);
-    dco(map, 38, 7, 38);
+    dco(map, 38, 7);
     dco(map, 45, 7);
-    dco(map, 53, 7, 38);
+    dco(map, 53, 7);
 
     ext(map, 58, 7);
 
@@ -387,13 +391,13 @@ function buildLevel5() {
 
     tree(map, 1, 5);
     dco(map, 10, 7);
-    dco(map, 17, 7, 38);
+    dco(map, 17, 7);
     dco(map, 24, 7);
-    dco(map, 31, 7, 38);
+    dco(map, 31, 7);
     dco(map, 38, 7);
-    dco(map, 42, 7, 38);
+    dco(map, 42, 7);
     dco(map, 49, 7);
-    dco(map, 56, 7, 38);
+    dco(map, 56, 7);
 
     ext(map, 64, 7);
 
