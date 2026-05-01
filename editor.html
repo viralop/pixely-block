@@ -102,7 +102,8 @@
   #toolbar-mode { font-size: 10px; color: #666; }
 
   #canvas-wrap { flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; }
-  #editor-canvas { display: block; flex: 1; }
+  #editor-canvas { display: block; }
+  #canvas-row { display: flex; flex: 1; min-height: 0; overflow: hidden; }
 
   #hscroll-wrap {
     height: 18px; background: #111; border-top: 1px solid #2a2a4a;
@@ -115,6 +116,18 @@
   }
   #hscroll-thumb:hover { background: #3a3a6a; }
   #hscroll-thumb.dragging { background: #e94560; cursor: grabbing; }
+
+  #vscroll-wrap {
+    width: 18px; background: #111; border-left: 1px solid #2a2a4a;
+    position: relative; cursor: pointer; flex-shrink: 0;
+  }
+  #vscroll-track { position: absolute; top: 0; bottom: 0; left: 2px; right: 2px; }
+  #vscroll-thumb {
+    position: absolute; left: 0; right: 0; min-height: 20px;
+    background: #2a2a4a; border-radius: 3px; cursor: grab;
+  }
+  #vscroll-thumb:hover { background: #3a3a6a; }
+  #vscroll-thumb.dragging { background: #e94560; cursor: grabbing; }
 
   #statusbar {
     height: 24px; background: #111; font-size: 11px; display: flex; align-items: center;
@@ -210,7 +223,12 @@
         <button class="ent-btn" data-type="prop" style="background:#2a2a1a;border:2px solid #8bc34a;color:#8bc34a;">Prop</button>
       </div>
     </div>
-    <canvas id="editor-canvas"></canvas>
+    <div id="canvas-row">
+      <canvas id="editor-canvas"></canvas>
+      <div id="vscroll-wrap">
+        <div id="vscroll-track"><div id="vscroll-thumb"></div></div>
+      </div>
+    </div>
     <div id="hscroll-wrap">
       <div id="hscroll-track"><div id="hscroll-thumb"></div></div>
     </div>
@@ -436,7 +454,7 @@ function startEditor(name, w, h, mapData, entData, sData, pData) {
 
   resize();
   camX = 0; camY = 0;
-  hist.reset(); updCount(); syncHScroll();
+  hist.reset(); updCount(); syncHScroll(); syncVScroll();
 }
 
 function showPicker() {
@@ -447,11 +465,11 @@ function showPicker() {
 
 // === CANVAS ===
 function resize() {
-  const w = document.getElementById('canvas-wrap');
-  if (!w) return;
-  cv.width = w.clientWidth;
-  cv.height = w.clientHeight - 42;
-  syncHScroll();
+  const row = document.getElementById('canvas-row');
+  if (!row) return;
+  cv.width = row.clientWidth - 18;
+  cv.height = row.clientHeight;
+  syncHScroll(); syncVScroll();
 }
 
 function s2w(sx, sy) { return { x: sx + camX, y: sy + camY }; }
@@ -583,7 +601,7 @@ cv.addEventListener('mousemove', (e) => {
 cv.addEventListener('mouseup', () => { panning = false; painting = false; });
 cv.addEventListener('mouseleave', () => { panning = false; painting = false; });
 cv.addEventListener('contextmenu', e => e.preventDefault());
-cv.addEventListener('wheel', (e) => { e.preventDefault(); const s = RT; if (e.shiftKey) camY += e.deltaY > 0 ? s : -s; else { camX += e.deltaY > 0 ? s : -s; syncHScroll(); } }, { passive: false });
+cv.addEventListener('wheel', (e) => { e.preventDefault(); const s = RT; if (e.shiftKey) { camY += e.deltaY > 0 ? s : -s; syncVScroll(); } else { camX += e.deltaY > 0 ? s : -s; syncHScroll(); } }, { passive: false });
 
 // Keyboard
 const keys = {};
@@ -593,8 +611,8 @@ window.addEventListener('keydown', (e) => {
   const ps = RT * 2;
   if (e.code === 'ArrowLeft') { camX -= ps; syncHScroll(); }
   if (e.code === 'ArrowRight') { camX += ps; syncHScroll(); }
-  if (e.code === 'ArrowUp') camY -= ps;
-  if (e.code === 'ArrowDown') camY += ps;
+  if (e.code === 'ArrowUp') { camY -= ps; syncVScroll(); }
+  if (e.code === 'ArrowDown') { camY += ps; syncVScroll(); }
 });
 window.addEventListener('keyup', (e) => { keys[e.code] = false; });
 window.addEventListener('resize', resize);
@@ -627,7 +645,36 @@ document.addEventListener('mousemove', (e) => {
   const trackW = hTrack.clientWidth, thumbW = Math.max(20, (viewW / totalW) * trackW);
   camX = Math.max(0, Math.min(maxCam, hDragCamX0 + ((e.clientX - hDragX0) / (trackW - thumbW)) * maxCam)); syncHScroll();
 });
-document.addEventListener('mouseup', () => { if (hDrag) { hDrag = false; hThumb.classList.remove('dragging'); } });
+document.addEventListener('mouseup', () => { if (hDrag) { hDrag = false; hThumb.classList.remove('dragging'); } if (vDrag) { vDrag = false; vThumb.classList.remove('dragging'); } });
+
+// === VSCROLL ===
+const vThumb = document.getElementById('vscroll-thumb'), vTrack = document.getElementById('vscroll-track'), vWrap = document.getElementById('vscroll-wrap');
+let vDrag = false, vDragY0 = 0, vDragCamY0 = 0;
+
+function syncVScroll() {
+  const totalH = levelH * RT, viewH = cv.height;
+  if (totalH <= viewH) { vThumb.style.top = '0px'; vThumb.style.height = '100%'; return; }
+  const trackH = vTrack.clientHeight, thumbH = Math.max(20, (viewH / totalH) * trackH), maxCam = totalH - viewH;
+  vThumb.style.height = thumbH + 'px'; vThumb.style.top = (Math.max(0, Math.min(1, camY / maxCam)) * (trackH - thumbH)) + 'px';
+}
+
+vWrap.addEventListener('mousedown', (e) => {
+  e.preventDefault(); const rect = vTrack.getBoundingClientRect();
+  const totalH = levelH * RT, viewH = cv.height, maxCam = Math.max(1, totalH - viewH);
+  const trackH = vTrack.clientHeight, thumbH = Math.max(20, (viewH / totalH) * trackH), clickY = e.clientY - rect.top;
+  if (clickY >= parseFloat(vThumb.style.top) && clickY <= parseFloat(vThumb.style.top) + thumbH) {
+    vDrag = true; vDragY0 = e.clientY; vDragCamY0 = camY; vThumb.classList.add('dragging');
+  } else {
+    camY = Math.max(0, Math.min(maxCam, ((clickY - thumbH/2) / (trackH - thumbH)) * maxCam)); syncVScroll();
+    vDrag = true; vDragY0 = e.clientY; vDragCamY0 = camY; vThumb.classList.add('dragging');
+  }
+});
+document.addEventListener('mousemove', (e) => {
+  if (!vDrag) return;
+  const totalH = levelH * RT, viewH = cv.height, maxCam = Math.max(1, totalH - viewH);
+  const trackH = vTrack.clientHeight, thumbH = Math.max(20, (viewH / totalH) * trackH);
+  camY = Math.max(0, Math.min(maxCam, vDragCamY0 + ((e.clientY - vDragY0) / (trackH - thumbH)) * maxCam)); syncVScroll();
+});
 
 // === RENDER ===
 function render() {
@@ -758,7 +805,8 @@ function setupUI() {
   document.getElementById('btn-resize').onclick = () => {
     const nw = +document.getElementById('inp-w').value || 45, nh = +document.getElementById('inp-h').value || 10;
     hist.snap(); const nm = mk(nw, nh), nsm = mkBool(nw, nh), npm = mkBool(nw, nh);
-    for (let r = 0; r < Math.min(nh, levelH); r++) for (let c = 0; c < Math.min(nw, levelW); c++) { nm[r][c] = map[r][c]; nsm[r][c] = solidMap[r][c]; npm[r][c] = paintMap[r][c]; }
+    const off = Math.max(0, nh - levelH);
+    for (let r = 0; r < Math.min(nh, levelH); r++) for (let c = 0; c < Math.min(nw, levelW); c++) { nm[r + off][c] = map[r][c]; nsm[r + off][c] = solidMap[r][c]; npm[r + off][c] = paintMap[r][c]; }
     levelW = nw; levelH = nh; map = nm; solidMap = nsm; paintMap = npm; updCount(); toast('Resized to ' + nw + 'x' + nh);
   };
 }
