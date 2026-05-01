@@ -5,7 +5,7 @@ import { UI } from './ui.js';
 import { Player } from './player.js';
 import { Enemy } from './enemy.js';
 import { getLevel, getTotalLevels, getCustomLevels, getCustomLevel, seedBuiltInLevels } from './levels.js';
-import { rectOverlap, HAZARD_IDS, COIN_IDS, HEART_IDS, EXIT_IDS, SPRING_IDS, getTilesInRegion, getTileAt } from './collision.js';
+import { rectOverlap, HAZARD_IDS, COIN_IDS, HEART_IDS, EXIT_IDS, SPRING_IDS, CHECKPOINT_IDS, getTilesInRegion, getTileAt } from './collision.js';
 
 const FIXED_DT = 1000 / 60;
 const SPRING_FORCE = -16;
@@ -32,6 +32,8 @@ export class Game {
         this.particles = [];
         this.frameCount = 0;
         this.coinAnimId = 179;
+        this.checkpointAnimId = 139;
+        this.activatedCheckpoints = new Set();
         this.triggeredSprings = new Map();
         this.lastTime = 0;
         this.accumulator = 0;
@@ -196,6 +198,7 @@ export class Game {
         this.level.index = 0;
         this.level.totalLevels = 1;
         this.triggeredSprings = new Map();
+        this.activatedCheckpoints = new Set();
         const sx = level.spawn.tx * Sprites.RENDER_TILE;
         const sy = level.spawn.ty * Sprites.RENDER_TILE;
         this.player = new Player(sx, sy);
@@ -213,6 +216,7 @@ export class Game {
         this.level = level;
         this.levelIdx = idx;
         this.triggeredSprings = new Map();
+        this.activatedCheckpoints = new Set();
 
         const sx = level.spawn.tx * Sprites.RENDER_TILE;
         const sy = level.spawn.ty * Sprites.RENDER_TILE;
@@ -246,6 +250,7 @@ export class Game {
         this.frameCount++;
         if (this.frameCount % 15 === 0) {
             this.coinAnimId = this.coinAnimId === 179 ? 180 : 179;
+            this.checkpointAnimId = this.checkpointAnimId === 139 ? 140 : 139;
         }
 
         this._checkSpringBounce();
@@ -338,6 +343,14 @@ export class Game {
                 this._emitParticles(t.x + Sprites.RENDER_TILE / 2, t.y + Sprites.RENDER_TILE / 2, '#4caf50', 15, 3, -4);
                 this.state = 'LEVEL_COMPLETE';
                 return;
+            } else if (CHECKPOINT_IDS.has(t.tileId)) {
+                const key = `${t.col},${t.row}`;
+                if (!this.activatedCheckpoints.has(key)) {
+                    this.activatedCheckpoints.add(key);
+                    this.player.spawnX = t.col * Sprites.RENDER_TILE + (Sprites.RENDER_TILE - this.player.w) / 2;
+                    this.player.spawnY = t.row * Sprites.RENDER_TILE;
+                    this._emitParticles(t.x + Sprites.RENDER_TILE / 2, t.y + Sprites.RENDER_TILE / 2, '#4fc3f7', 10, 2, -3);
+                }
             }
         }
     }
@@ -463,6 +476,10 @@ export class Game {
             for (let col = startCol; col <= endCol; col++) {
                 let id = lvl.map[row][col];
                 if (id === 179 || id === 180) id = this.coinAnimId;
+                if (id === 139 || id === 140) {
+                    const key = `${row},${col}`;
+                    id = this.activatedCheckpoints.has(key) ? 140 : this.checkpointAnimId;
+                }
                 if (id === 135 || id === 136) {
                     const key = `${row},${col}`;
                     id = this.triggeredSprings.has(key) ? 136 : 135;

@@ -82,6 +82,7 @@ export const EXIT_IDS = new Set([178]);
 export const LADDER_IDS = new Set([79, 99]);
 export const ROPE_IDS = new Set([118, 119, 120]);
 export const SPRING_IDS = new Set([135, 136]);
+export const CHECKPOINT_IDS = new Set([139, 140]);
 
 export function isLadder(tileId) { return LADDER_IDS.has(tileId); }
 export function isRope(tileId) { return ROPE_IDS.has(tileId); }

@@ -80,7 +80,7 @@ function spr(map, x, y) { if (map[y]) map[y][x] = 135; }
 
 function slime(tx, ty, l, r) { return { type: 'slime', tx, ty, patrolL: l, patrolR: r }; }
 function bat(tx, ty, l, r) { return { type: 'bat', tx, ty, patrolL: l, patrolR: r }; }
-function skel(tx, ty, l, r) { return { type: 'skeleton', tx, ty, patrolL: l, patrolR: r }; }
+function skel(tx, ty, l, r) { return { type: 'skeleton1', tx, ty, patrolL: l, patrolR: r }; }
 
 function buildLevel1() {
     const W = 45, H = 10;
@@ -502,7 +502,7 @@ export function seedBuiltInLevels() {
         const name = levelNames[i];
         if (existing.find(l => l.name === name)) continue;
         const lvl = builders[i]();
-        existing.push({ name, w: lvl.width, h: lvl.height, map: lvl.map, builtin: true, created: 0 });
+        existing.push({ name, w: lvl.width, h: lvl.height, map: lvl.map, entities: lvl.entities || [], builtin: true, created: 0 });
     }
     localStorage.setItem('pqCustomLevels', JSON.stringify(existing));
 }
@@ -515,10 +515,10 @@ export function getCustomLevels() {
     } catch (e) { return []; }
 }
 
-export function saveCustomLevel(name, w, h, mapData) {
+export function saveCustomLevel(name, w, h, mapData, entitiesData) {
     const levels = getCustomLevels();
     const existing = levels.findIndex(l => l.name === name);
-    const entry = { name, w, h, map: mapData, created: Date.now() };
+    const entry = { name, w, h, map: mapData, entities: entitiesData || [], created: Date.now() };
     if (existing >= 0) levels[existing] = entry;
     else levels.push(entry);
     localStorage.setItem('pqCustomLevels', JSON.stringify(levels));
@@ -542,7 +542,7 @@ export function getCustomLevel(name) {
         spawn: { tx: 1, ty: entry.h - 2 },
         exit: { tx: entry.w - 2, ty: entry.h - 2 },
         map: entry.map.map(r => r.slice()),
-        entities: [],
+        entities: (entry.entities || []).map(e => ({...e})),
         decorations: []
     };
 }

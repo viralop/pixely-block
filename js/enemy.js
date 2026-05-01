@@ -5,21 +5,35 @@ const GRAVITY = 0.45;
 const ENEMY_TYPES = {
     slime: {
         hp: 2, speed: 1.2, chaseSpeed: 2.2, chaseRange: 180, score: 50,
-        frames: [10, 11], width: 0.55, height: 0.55, groundOnly: true
+        animGroups: [[10, 11]], width: 0.55, height: 0.55, groundOnly: true
     },
     bat: {
         hp: 1, speed: 1.5, chaseSpeed: 2.8, chaseRange: 220, score: 75,
-        frames: [19, 20], width: 0.5, height: 0.5, groundOnly: false
+        animGroups: [[25, 26, 27]], width: 0.5, height: 0.5, groundOnly: false
     },
-    skeleton: {
+    skeleton1: {
         hp: 3, speed: 1.0, chaseSpeed: 2.5, chaseRange: 200, score: 100,
-        frames: [14, 15], width: 0.6, height: 0.8, groundOnly: true
+        animGroups: [[16, 17, 18]], width: 0.6, height: 0.8, groundOnly: true
+    },
+    skeleton2: {
+        hp: 3, speed: 1.0, chaseSpeed: 2.5, chaseRange: 200, score: 100,
+        animGroups: [[19, 20, 21]], width: 0.6, height: 0.8, groundOnly: true
+    },
+    skeleton3: {
+        hp: 3, speed: 1.0, chaseSpeed: 2.5, chaseRange: 200, score: 100,
+        animGroups: [[22, 23, 24]], width: 0.6, height: 0.8, groundOnly: true
+    },
+    prop: {
+        hp: 1, speed: 0, chaseSpeed: 0, chaseRange: 0, score: 0,
+        animGroups: [[14, 15]], width: 0.55, height: 0.55, groundOnly: true
     }
 };
 
 export class Enemy {
     constructor(type, tileX, tileY, patrolLeft, patrolRight, tileW, tileH) {
+        if (type === 'skeleton') type = 'skeleton1';
         const cfg = ENEMY_TYPES[type];
+        if (!cfg) return;
         this.type = type;
         this.config = cfg;
         this.w = CHAR_SIZE * SCALE * cfg.width;
@@ -47,6 +61,11 @@ export class Enemy {
 
         if (this.hitTimer > 0) this.hitTimer--;
         if (this.attackCooldown > 0) this.attackCooldown--;
+
+        if (this.config.speed === 0) {
+            this._tickAnim();
+            return;
+        }
 
         const dx = playerX - (this.x + this.w / 2);
         const dy = playerY - (this.y + this.h / 2);
@@ -88,10 +107,15 @@ export class Enemy {
             this.y += this.vy;
         }
 
+        this._tickAnim();
+    }
+
+    _tickAnim() {
         this.animTimer++;
-        if (this.animTimer >= 15) {
+        const group = this.config.animGroups[0];
+        if (this.animTimer >= 10) {
             this.animTimer = 0;
-            this.animFrame = (this.animFrame + 1) % 2;
+            this.animFrame = (this.animFrame + 1) % group.length;
         }
     }
 
@@ -119,7 +143,8 @@ export class Enemy {
 
         if (this.hitTimer > 0 && Math.floor(this.hitTimer / 2) % 2 === 0) return;
 
-        const charId = this.config.frames[this.animFrame];
+        const group = this.config.animGroups[0];
+        const charId = group[this.animFrame % group.length];
         const drawX = this.x - camX - (RENDER_CHAR - this.w) / 2;
         const drawY = this.y - camY - (RENDER_CHAR - this.h);
 
