@@ -82,7 +82,7 @@ export class Input {
         return this.justPressed('ArrowUp') || this.justPressed('KeyW') || this.justPressed('Space');
     }
     get attack() {
-        return this.justPressed('KeyJ') || this.justPressed('KeyZ') || this.justPressed('KeyX') || this.touch.attack;
+        return this.justPressed('KeyJ') || this.justPressed('KeyZ') || this.justPressed('KeyX') || this.isDown('KeyJ') || this.isDown('KeyZ') || this.isDown('KeyX') || this.touch.attack;
     }
     get enter() {
         return this.justPressed('Enter') || this.justPressed('Space');

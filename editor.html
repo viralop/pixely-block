@@ -159,6 +159,7 @@
     <div id="sel-info">
       <canvas id="sel-preview" width="32" height="32"></canvas>
       <span id="sel-label">Tile ID: 49</span>
+      <span id="sel-solid" style="font-size:9px;padding:2px 6px;background:#1a3a2a;border:1px solid #4caf50;color:#4caf50;border-radius:3px;">SOLID</span>
     </div>
     <div id="palette-scroll"><div id="palette"></div></div>
 
@@ -254,6 +255,12 @@ let editMode = 'build';
 const SOLID_TILES = new Set([33,52,53,169,170,171,109,110,111,49,50,51,60,80,100,76,78,181,182,183]);
 const DEFAULT_BUILD = 49;
 const DEFAULT_PAINT = 28;
+
+function getPlaceId() {
+  if (editMode === 'build') return SOLID_TILES.has(selId) ? selId : DEFAULT_BUILD;
+  if (editMode === 'paint') return !SOLID_TILES.has(selId) ? selId : DEFAULT_PAINT;
+  return selId;
+}
 
 let entities = [];
 let selEntityType = 'slime';
@@ -401,7 +408,9 @@ function buildPicker() {
     const tileCount = l.map ? l.map.flat().filter(t => t > 0).length : 0;
     const entCount = l.entities ? l.entities.length : 0;
     row.innerHTML = `<span class="pick-icon">${icon}</span><span class="pick-name" style="color:${l.builtin ? '#8be9fd' : '#ffd700'}">${l.name}</span><span class="pick-size">${l.w}x${l.h} | ${tileCount} tiles${entCount ? ' | ' + entCount + ' enemies' : ''}</span>`;
-    row.onclick = () => startEditor(l.name, l.w, l.h, l.map.map(r => r.slice()), (l.entities || []).map(e => ({...e})));
+    const mapData = l.map ? l.map.map(r => (r && r.slice) ? r.slice() : r) : mk(l.w || 45, l.h || 10);
+    const entData = Array.isArray(l.entities) ? l.entities.map(e => ({...e})) : [];
+    row.onclick = () => startEditor(l.name, l.w, l.h, mapData, entData);
     list.appendChild(row);
   }
 }
@@ -478,6 +487,12 @@ function updSelPreview() {
   const r = getTileSrcRect(selId);
   x.drawImage(tileImg, r.sx, r.sy, TS, TS, 0, 0, 32, 32);
   document.getElementById('sel-label').textContent = 'Tile ID: ' + selId;
+  const solid = SOLID_TILES.has(selId);
+  const sl = document.getElementById('sel-solid');
+  sl.textContent = solid ? 'SOLID' : 'DECOR';
+  sl.style.borderColor = solid ? '#4caf50' : '#42a5f5';
+  sl.style.color = solid ? '#4caf50' : '#42a5f5';
+  sl.style.background = solid ? '#1a3a2a' : '#1a2a3a';
 }
 
 function onPalDown(e) {
@@ -511,7 +526,7 @@ document.addEventListener('mouseup', (e) => {
   if (sx >= 0 && sy >= 0 && sx < rect.width && sy < rect.height) {
     const w = s2w(sx, sy);
     const gx = Math.floor(w.x / RT), gy = Math.floor(w.y / RT);
-    if (gx >= 0 && gx < levelW && gy >= 0 && gy < levelH) { hist.snap(); map[gy][gx] = selId; updCount(); }
+    if (gx >= 0 && gx < levelW && gy >= 0 && gy < levelH) { hist.snap(); map[gy][gx] = getPlaceId(); updCount(); }
   }
 });
 
@@ -542,7 +557,7 @@ cv.addEventListener('mousedown', (e) => {
     return;
   }
   if (e.button === 0) {
-    hist.snap(); map[gy][gx] = selId; painting = true; updCount();
+    hist.snap(); map[gy][gx] = getPlaceId(); painting = true; updCount();
   }
 });
 
@@ -553,7 +568,7 @@ cv.addEventListener('mousemove', (e) => {
   if (panning) { camX = camX0 - (e.clientX - panX0); camY = camY0 - (e.clientY - panY0); syncHScroll(); return; }
   if (painting && mgx >= 0 && mgx < levelW && mgy >= 0 && mgy < levelH) {
     if (editMode === 'erase') { if (map[mgy][mgx] !== 0) { map[mgy][mgx] = 0; updCount(); } }
-    else { if (map[mgy][mgx] !== selId) { map[mgy][mgx] = selId; updCount(); } }
+    else { const pid = getPlaceId(); if (map[mgy][mgx] !== pid) { map[mgy][mgx] = pid; updCount(); } }
   }
   document.getElementById('st-pos').textContent = 'Grid: ' + mgx + ', ' + mgy;
 });

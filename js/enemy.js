@@ -32,8 +32,7 @@ const ENEMY_TYPES = {
 export class Enemy {
     constructor(type, tileX, tileY, patrolLeft, patrolRight, tileW, tileH) {
         if (type === 'skeleton') type = 'skeleton1';
-        const cfg = ENEMY_TYPES[type];
-        if (!cfg) return;
+        const cfg = ENEMY_TYPES[type] || ENEMY_TYPES.slime;
         this.type = type;
         this.config = cfg;
         this.w = CHAR_SIZE * SCALE * cfg.width;
