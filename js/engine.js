@@ -6,7 +6,7 @@ import { Player } from './player.js';
 import { Enemy } from './enemy.js';
 import { Boss, getBossDef, isBossLevel } from './boss.js';
 import { getLevel, getTotalLevels, getCustomLevels, getCustomLevel, seedBuiltInLevels } from './levels.js';
-import { rectOverlap, HAZARD_IDS, COIN_IDS, HEART_IDS, EXIT_IDS, SPRING_IDS, CHECKPOINT_IDS, getTilesInRegion, getTileAt } from './collision.js';
+import { rectOverlap, HAZARD_IDS, COIN_IDS, HEART_IDS, EXIT_IDS, SPRING_IDS, CHECKPOINT_IDS, getTilesInRegion, getTileAt, isSolid } from './collision.js';
 
 const FIXED_DT = 1000 / 60;
 const SPRING_FORCE = -16;
@@ -222,6 +222,9 @@ export class Game {
         if (!level) { this.state = 'VICTORY'; return; }
         this.level = level;
         this.levelIdx = idx;
+        if (!level.solidMap) {
+            level.solidMap = level.map.map(row => row.map(id => isSolid(id)));
+        }
         this.triggeredSprings = new Map();
         this.activatedCheckpoints = new Set();
 
@@ -275,7 +278,7 @@ export class Game {
 
         this._checkSpringBounce();
 
-        this.player.update(this.input, this.level.map, Sprites.RENDER_TILE, Sprites.RENDER_TILE);
+        this.player.update(this.input, this.level.map, Sprites.RENDER_TILE, Sprites.RENDER_TILE, this.level.solidMap);
 
         if (this.player.didJump) {
             this.audio.jump();
@@ -292,14 +295,16 @@ export class Game {
         this.enemies.forEach(e => {
             e.update(
                 this.level.map, Sprites.RENDER_TILE, Sprites.RENDER_TILE,
-                this.player.getCenterX(), this.player.getCenterY(), !this.player.dead
+                this.player.getCenterX(), this.player.getCenterY(), !this.player.dead,
+                this.level.solidMap
             );
         });
 
         if (this.boss && this.boss.alive) {
             this.boss.update(
                 this.level.map, Sprites.RENDER_TILE, Sprites.RENDER_TILE,
-                this.player.getCenterX(), this.player.getCenterY(), !this.player.dead
+                this.player.getCenterX(), this.player.getCenterY(), !this.player.dead,
+                this.level.solidMap
             );
         }
 

@@ -542,6 +542,7 @@ export function getCustomLevel(name) {
         spawn: { tx: 1, ty: entry.h - 2 },
         exit: { tx: entry.w - 2, ty: entry.h - 2 },
         map: entry.map.map(r => r.slice()),
+        solidMap: entry.solidMap ? entry.solidMap.map(r => r.slice()) : null,
         entities: (entry.entities || []).map(e => ({...e})),
         decorations: []
     };

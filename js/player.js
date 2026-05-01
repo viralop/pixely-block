@@ -63,14 +63,14 @@ export class Player {
         this.ropeY = 0;
     }
 
-    update(input, solidMap, tileW, tileH) {
+    update(input, solidMap, tileW, tileH, customSolidMap) {
         if (this.dead) return;
-        if (this.climbing) { this._updateClimbing(input, solidMap, tileW, tileH); return; }
-        if (this.onRope) { this._updateRope(input, solidMap, tileW, tileH); return; }
-        this._updateNormal(input, solidMap, tileW, tileH);
+        if (this.climbing) { this._updateClimbing(input, solidMap, tileW, tileH, customSolidMap); return; }
+        if (this.onRope) { this._updateRope(input, solidMap, tileW, tileH, customSolidMap); return; }
+        this._updateNormal(input, solidMap, tileW, tileH, customSolidMap);
     }
 
-    _updateNormal(input, solidMap, tileW, tileH) {
+    _updateNormal(input, solidMap, tileW, tileH, customSolidMap) {
         let targetVx = 0;
         if (input.left) { targetVx = -MAX_SPEED; this.facing = -1; }
         if (input.right) { targetVx = MAX_SPEED; this.facing = 1; }
@@ -95,7 +95,7 @@ export class Player {
         if (!input.jump && this.vy < -3) this.vy *= 0.6;
         this.vy += GRAVITY;
         if (this.vy > 12) this.vy = 12;
-        this.onGround = moveEntity(this, this.vx, this.vy, solidMap, tileW, tileH);
+        this.onGround = moveEntity(this, this.vx, this.vy, solidMap, tileW, tileH, customSolidMap);
         if (input.attack && !this.attacking) {
             this.attacking = true;
             this.attackTimer = ATTACK_DURATION;
@@ -149,7 +149,7 @@ export class Player {
         }
     }
 
-    _updateClimbing(input, solidMap, tileW, tileH) {
+    _updateClimbing(input, solidMap, tileW, tileH, customSolidMap) {
         if (input.jumpPressed) {
             this.climbing = false;
             this.vy = JUMP_FORCE;
@@ -180,7 +180,7 @@ export class Player {
         if (this.animTimer >= 10) { this.animTimer = 0; this.animFrame = (this.animFrame + 1) % 2; }
     }
 
-    _updateRope(input, solidMap, tileW, tileH) {
+    _updateRope(input, solidMap, tileW, tileH, customSolidMap) {
         if (input.jumpPressed) { this.onRope = false; this.vy = JUMP_FORCE; return; }
         this.vy = 0;
         if (input.left) { this.x -= ROPE_SPEED; this.facing = -1; }
@@ -236,9 +236,13 @@ export class Player {
             else if (Math.abs(this.vx) > 0.5) key = this.animFrame % 2 === 0 ? 'knight_run' : 'knight_idle';
             drawExtra(ctx, key, drawX, drawY, sz, flip);
             if (isAttacking) {
-                const atkKey = (this.attackTimer % 6 < 3) ? 'knight_atk1' : 'knight_atk2';
                 const swordOff = this.facing > 0 ? RENDER_CHAR * 0.6 : -RENDER_CHAR * 0.6;
-                drawExtra(ctx, atkKey, drawX + swordOff, drawY, sz, flip);
+                if (hasExtra('sword')) {
+                    drawExtra(ctx, 'sword', drawX + swordOff, drawY, sz, flip);
+                } else {
+                    const atkKey = (this.attackTimer % 6 < 3) ? 'knight_atk1' : 'knight_atk2';
+                    drawExtra(ctx, atkKey, drawX + swordOff, drawY, sz, flip);
+                }
             }
         } else {
             let charId;
@@ -250,7 +254,11 @@ export class Player {
             drawCharFn(ctx, charId, drawX, drawY, flip);
             if (isAttacking) {
                 const swordOff = this.facing > 0 ? RENDER_CHAR * 0.6 : -RENDER_CHAR * 0.6;
-                drawCharFn(ctx, CHAR_IDS.attack, drawX + swordOff, drawY, flip);
+                if (hasExtra('sword')) {
+                    drawExtra(ctx, 'sword', drawX + swordOff, drawY, sz, flip);
+                } else {
+                    drawCharFn(ctx, CHAR_IDS.attack, drawX + swordOff, drawY, flip);
+                }
             }
         }
     }

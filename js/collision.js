@@ -31,13 +31,13 @@ export function getTilesInRegion(map, x, y, w, h, tileW, tileH) {
     return results;
 }
 
-export function moveEntity(entity, dx, dy, solidMap, tileW, tileH) {
+export function moveEntity(entity, dx, dy, solidMap, tileW, tileH, customSolidMap) {
     let grounded = false;
 
     entity.x += dx;
     const tilesX = getTilesInRegion(solidMap, entity.x, entity.y, entity.w, entity.h, tileW, tileH);
     for (const tile of tilesX) {
-        if (isSolid(tile.tileId) && rectOverlap(entity, tile)) {
+        if (isSolid(tile.tileId, customSolidMap, tile.row, tile.col) && rectOverlap(entity, tile)) {
             if (dx > 0) entity.x = tile.x - entity.w;
             else if (dx < 0) entity.x = tile.x + tile.w;
         }
@@ -46,7 +46,7 @@ export function moveEntity(entity, dx, dy, solidMap, tileW, tileH) {
     entity.y += dy;
     const tilesY = getTilesInRegion(solidMap, entity.x, entity.y, entity.w, entity.h, tileW, tileH);
     for (const tile of tilesY) {
-        if (isSolid(tile.tileId) && rectOverlap(entity, tile)) {
+        if (isSolid(tile.tileId, customSolidMap, tile.row, tile.col) && rectOverlap(entity, tile)) {
             if (dy > 0) {
                 entity.y = tile.y - entity.h;
                 entity.vy = 0;
@@ -71,7 +71,10 @@ const SOLID_SET = new Set([
     181, 182, 183
 ]);
 
-export function isSolid(tileId) {
+export function isSolid(tileId, customSolidMap, row, col) {
+    if (customSolidMap) {
+        return !!(customSolidMap[row] && customSolidMap[row][col]);
+    }
     return SOLID_SET.has(tileId);
 }
 

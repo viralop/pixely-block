@@ -34,7 +34,7 @@ export class Boss {
         this.phase = 0;
     }
 
-    update(solidMap, tileW, tileH, playerX, playerY, playerAlive) {
+    update(solidMap, tileW, tileH, playerX, playerY, playerAlive, customSolidMap) {
         if (!this.alive) return;
         if (this.hitTimer > 0) this.hitTimer--;
         if (this.attackCooldown > 0) this.attackCooldown--;
@@ -61,7 +61,7 @@ export class Boss {
 
         this.vy += GRAVITY;
         if (this.vy > 10) this.vy = 10;
-        const grounded = moveEntity(this, this.vx, this.vy, solidMap, tileW, tileH);
+        const grounded = moveEntity(this, this.vx, this.vy, solidMap, tileW, tileH, customSolidMap);
         if (grounded) this.vy = 0;
 
         this.animTimer++;

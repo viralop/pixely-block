@@ -244,6 +244,8 @@ const ghostCx = ghostCv.getContext('2d');
 let tileImg, bgImg, charImg;
 let levelW = 45, levelH = 10;
 let map = mk(levelW, levelH);
+let solidMap = mkBool(levelW, levelH);
+let paintMap = mkBool(levelW, levelH);
 let selId = 49;
 let camX = 0, camY = 0;
 let mgx = -1, mgy = -1;
@@ -274,6 +276,7 @@ const ENEMY_DEFS = {
 };
 
 function mk(w, h) { return Array.from({length: h}, () => new Array(w).fill(0)); }
+function mkBool(w, h) { return Array.from({length: h}, () => new Array(w).fill(false)); }
 
 // === BUILT-IN LEVEL BUILDERS (mirrored from levels.js) ===
 const GS = { tl: 49, tm: 50, tr: 51, fill: [169, 170, 171] };
@@ -364,7 +367,8 @@ function seedLevels() {
   for (let i = 0; i < 5; i++) {
     const lvl = buildBuiltin(i);
     if (existing.find(l => l.name === lvl.name)) continue;
-    existing.push({ name: lvl.name, w: lvl.w, h: lvl.h, map: lvl.map, builtin: true, created: 0 });
+    const sm = lvl.map.map(row => row.map(id => SOLID_TILES.has(id)));
+    existing.push({ name: lvl.name, w: lvl.w, h: lvl.h, map: lvl.map, solidMap: sm, paintMap: mkBool(lvl.w, lvl.h), builtin: true, created: 0 });
     changed = true;
   }
   if (changed) saveLevels(existing);
@@ -372,9 +376,9 @@ function seedLevels() {
 
 const hist = {
   s: [], p: -1,
-  snap() { this.s = this.s.slice(0, this.p + 1); this.s.push({ m: map.map(r=>r.slice()), e: entities.map(en => ({...en})) }); this.p = this.s.length - 1; if (this.s.length > 80) { this.s.shift(); this.p--; } },
-  undo() { if (this.p <= 0) return; this.p--; const snap = this.s[this.p]; map = snap.m.map(r=>r.slice()); entities = snap.e.map(en => ({...en})); updCount(); },
-  redo() { if (this.p >= this.s.length - 1) return; this.p++; const snap = this.s[this.p]; map = snap.m.map(r=>r.slice()); entities = snap.e.map(en => ({...en})); updCount(); },
+  snap() { this.s = this.s.slice(0, this.p + 1); this.s.push({ m: map.map(r=>r.slice()), sm: solidMap.map(r=>r.slice()), pm: paintMap.map(r=>r.slice()), e: entities.map(en => ({...en})) }); this.p = this.s.length - 1; if (this.s.length > 80) { this.s.shift(); this.p--; } },
+  undo() { if (this.p <= 0) return; this.p--; const snap = this.s[this.p]; map = snap.m.map(r=>r.slice()); solidMap = snap.sm.map(r=>r.slice()); paintMap = snap.pm.map(r=>r.slice()); entities = snap.e.map(en => ({...en})); updCount(); },
+  redo() { if (this.p >= this.s.length - 1) return; this.p++; const snap = this.s[this.p]; map = snap.m.map(r=>r.slice()); solidMap = snap.sm.map(r=>r.slice()); paintMap = snap.pm.map(r=>r.slice()); entities = snap.e.map(en => ({...en})); updCount(); },
   reset() { this.s = []; this.p = -1; this.snap(); }
 };
 
@@ -396,7 +400,7 @@ function buildPicker() {
   const newRow = document.createElement('div');
   newRow.className = 'pick-row pick-new';
   newRow.innerHTML = '<span class="pick-icon">+</span><span class="pick-name">New Empty Level</span><span class="pick-size"></span>';
-  newRow.onclick = () => startEditor('My Level', 45, 10, mk(45, 10), []);
+  newRow.onclick = () => startEditor('My Level', 45, 10, mk(45, 10), [], mkBool(45, 10), mkBool(45, 10));
   list.appendChild(newRow);
 
   // Existing levels
@@ -408,16 +412,20 @@ function buildPicker() {
     const entCount = l.entities ? l.entities.length : 0;
     row.innerHTML = `<span class="pick-icon">${icon}</span><span class="pick-name" style="color:${l.builtin ? '#8be9fd' : '#ffd700'}">${l.name}</span><span class="pick-size">${l.w}x${l.h} | ${tileCount} tiles${entCount ? ' | ' + entCount + ' enemies' : ''}</span>`;
     const mapData = l.map ? l.map.map(r => (Array.isArray(r) && r.slice) ? r.slice() : new Array(l.w || 45).fill(0)) : mk(l.w || 45, l.h || 10);
+    const solidData = l.solidMap ? l.solidMap.map(r => (Array.isArray(r) && r.slice) ? r.slice() : new Array(l.w || 45).fill(false)) : mapData.map(r => r.map(id => SOLID_TILES.has(id)));
+    const paintData = l.paintMap ? l.paintMap.map(r => (Array.isArray(r) && r.slice) ? r.slice() : new Array(l.w || 45).fill(false)) : mkBool(l.w || 45, l.h || 10);
     const entData = Array.isArray(l.entities) ? l.entities.filter(e => ENEMY_DEFS[e.type]).map(e => ({...e})) : [];
-    row.onclick = () => startEditor(l.name, l.w, l.h, mapData, entData);
+    row.onclick = () => startEditor(l.name, l.w, l.h, mapData, entData, solidData, paintData);
     list.appendChild(row);
   }
 }
 
-function startEditor(name, w, h, mapData, entData) {
+function startEditor(name, w, h, mapData, entData, sData, pData) {
   editingName = name;
   levelW = w; levelH = h;
   map = mapData;
+  solidMap = sData || mkBool(w, h);
+  paintMap = pData || mkBool(w, h);
   entities = entData || [];
   document.getElementById('inp-w').value = w;
   document.getElementById('inp-h').value = h;
@@ -525,7 +533,7 @@ document.addEventListener('mouseup', (e) => {
   if (sx >= 0 && sy >= 0 && sx < rect.width && sy < rect.height) {
     const w = s2w(sx, sy);
     const gx = Math.floor(w.x / RT), gy = Math.floor(w.y / RT);
-    if (gx >= 0 && gx < levelW && gy >= 0 && gy < levelH) { hist.snap(); map[gy][gx] = getPlaceId(); updCount(); }
+    if (gx >= 0 && gx < levelW && gy >= 0 && gy < levelH) { hist.snap(); map[gy][gx] = getPlaceId(); solidMap[gy][gx] = editMode === 'build'; paintMap[gy][gx] = editMode === 'paint'; updCount(); }
   }
 });
 
@@ -552,11 +560,11 @@ cv.addEventListener('mousedown', (e) => {
   }
 
   if (e.button === 2 || editMode === 'erase') {
-    hist.snap(); map[gy][gx] = 0; painting = true; updCount();
+    hist.snap(); map[gy][gx] = 0; solidMap[gy][gx] = false; paintMap[gy][gx] = false; painting = true; updCount();
     return;
   }
   if (e.button === 0) {
-    hist.snap(); map[gy][gx] = getPlaceId(); painting = true; updCount();
+    hist.snap(); map[gy][gx] = getPlaceId(); solidMap[gy][gx] = editMode === 'build'; paintMap[gy][gx] = editMode === 'paint'; painting = true; updCount();
   }
 });
 
@@ -566,8 +574,8 @@ cv.addEventListener('mousemove', (e) => {
   mgx = Math.floor(w.x / RT); mgy = Math.floor(w.y / RT);
   if (panning) { camX = camX0 - (e.clientX - panX0); camY = camY0 - (e.clientY - panY0); syncHScroll(); return; }
   if (painting && mgx >= 0 && mgx < levelW && mgy >= 0 && mgy < levelH) {
-    if (editMode === 'erase') { if (map[mgy][mgx] !== 0) { map[mgy][mgx] = 0; updCount(); } }
-    else { const pid = getPlaceId(); if (map[mgy][mgx] !== pid) { map[mgy][mgx] = pid; updCount(); } }
+    if (editMode === 'erase') { if (map[mgy][mgx] !== 0) { map[mgy][mgx] = 0; solidMap[mgy][mgx] = false; paintMap[mgy][mgx] = false; updCount(); } }
+    else { const pid = getPlaceId(); if (map[mgy][mgx] !== pid) { map[mgy][mgx] = pid; solidMap[mgy][mgx] = editMode === 'build'; paintMap[mgy][mgx] = editMode === 'paint'; updCount(); } }
   }
   document.getElementById('st-pos').textContent = 'Grid: ' + mgx + ', ' + mgy;
 });
@@ -633,6 +641,8 @@ function render() {
   for (let r = sr; r <= er; r++) for (let c = sc; c <= ec; c++) {
     const x = c * RT, y = r * RT, id = (map[r] && map[r][c]) || 0;
     if (id > 0) { const rc = getTileSrcRect(id); cx.drawImage(tileImg, rc.sx, rc.sy, TS, TS, x, y, RT, RT); }
+    if (solidMap[r] && solidMap[r][c]) { cx.fillStyle = 'rgba(255,0,0,0.18)'; cx.fillRect(x, y, RT, RT); }
+    else if (paintMap[r] && paintMap[r][c]) { cx.fillStyle = 'rgba(0,255,0,0.18)'; cx.fillRect(x, y, RT, RT); }
     cx.strokeStyle = id > 0 ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.12)';
     cx.lineWidth = 1; cx.strokeRect(x + 0.5, y + 0.5, RT - 1, RT - 1);
   }
@@ -692,7 +702,7 @@ function drawBG(cx0, cy0) {
 function saveCurrentLevel() {
   const levels = getLevels();
   const idx = levels.findIndex(l => l.name === editingName);
-  const entry = { name: editingName, w: levelW, h: levelH, map, entities: entities.map(e => ({...e})), created: Date.now() };
+  const entry = { name: editingName, w: levelW, h: levelH, map, solidMap, paintMap, entities: entities.map(e => ({...e})), created: Date.now() };
   if (idx >= 0) { if (levels[idx].builtin) entry.builtin = true; levels[idx] = entry; }
   else levels.push(entry);
   saveLevels(levels);
@@ -731,7 +741,7 @@ function setupUI() {
   setMode('build');
   document.getElementById('btn-undo').onclick = () => hist.undo();
   document.getElementById('btn-redo').onclick = () => hist.redo();
-  document.getElementById('btn-clear').onclick = () => { hist.snap(); map = mk(levelW, levelH); entities = []; updCount(); };
+  document.getElementById('btn-clear').onclick = () => { hist.snap(); map = mk(levelW, levelH); solidMap = mkBool(levelW, levelH); paintMap = mkBool(levelW, levelH); entities = []; updCount(); };
   document.getElementById('btn-exit').onclick = () => showPicker();
   document.getElementById('btn-save').onclick = () => saveCurrentLevel();
   document.getElementById('btn-export').onclick = () => {
@@ -747,9 +757,9 @@ function setupUI() {
   };
   document.getElementById('btn-resize').onclick = () => {
     const nw = +document.getElementById('inp-w').value || 45, nh = +document.getElementById('inp-h').value || 10;
-    hist.snap(); const nm = mk(nw, nh);
-    for (let r = 0; r < Math.min(nh, levelH); r++) for (let c = 0; c < Math.min(nw, levelW); c++) nm[r][c] = map[r][c];
-    levelW = nw; levelH = nh; map = nm; updCount(); toast('Resized to ' + nw + 'x' + nh);
+    hist.snap(); const nm = mk(nw, nh), nsm = mkBool(nw, nh), npm = mkBool(nw, nh);
+    for (let r = 0; r < Math.min(nh, levelH); r++) for (let c = 0; c < Math.min(nw, levelW); c++) { nm[r][c] = map[r][c]; nsm[r][c] = solidMap[r][c]; npm[r][c] = paintMap[r][c]; }
+    levelW = nw; levelH = nh; map = nm; solidMap = nsm; paintMap = npm; updCount(); toast('Resized to ' + nw + 'x' + nh);
   };
 }
 

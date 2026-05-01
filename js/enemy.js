@@ -55,7 +55,7 @@ export class Enemy {
         this.floatOffset = 0;
     }
 
-    update(solidMap, tileW, tileH, playerX, playerY, playerAlive) {
+    update(solidMap, tileW, tileH, playerX, playerY, playerAlive, customSolidMap) {
         if (!this.alive) return;
 
         if (this.hitTimer > 0) this.hitTimer--;
@@ -83,7 +83,7 @@ export class Enemy {
             }
             this.vy += GRAVITY;
             if (this.vy > 10) this.vy = 10;
-            const grounded = moveEntity(this, this.vx, this.vy, solidMap, tileW, tileH);
+            const grounded = moveEntity(this, this.vx, this.vy, solidMap, tileW, tileH, customSolidMap);
             if (grounded) this.vy = 0;
         } else {
             if (shouldChase) {
