@@ -4,6 +4,7 @@ import { Audio } from './audio.js';
 import { UI } from './ui.js';
 import { Player } from './player.js';
 import { Enemy } from './enemy.js';
+import { Boss, getBossDef, isBossLevel } from './boss.js';
 import { getLevel, getTotalLevels, getCustomLevels, getCustomLevel, seedBuiltInLevels } from './levels.js';
 import { rectOverlap, HAZARD_IDS, COIN_IDS, HEART_IDS, EXIT_IDS, SPRING_IDS, CHECKPOINT_IDS, getTilesInRegion, getTileAt } from './collision.js';
 
@@ -26,9 +27,12 @@ export class Game {
         this.level = null;
         this.player = null;
         this.enemies = [];
+        this.boss = null;
+        this.bossDefeated = false;
         this.camX = 0;
         this.camY = 0;
         this.hitSet = new Set();
+        this.bossHit = false;
         this.particles = [];
         this.frameCount = 0;
         this.coinAnimId = 179;
@@ -123,6 +127,9 @@ export class Game {
                 break;
             case 'VICTORY':
                 if (this.input.enter) { this.state = 'MENU'; this._buildMenu(); }
+                break;
+            case 'QUEEN_RESCUED':
+                if (this.input.enter) this._advanceLevel();
                 break;
         }
         this.input.update();
@@ -226,6 +233,19 @@ export class Game {
             return new Enemy(e.type, e.tx, e.ty, e.patrolL, e.patrolR, Sprites.RENDER_TILE, Sprites.RENDER_TILE);
         });
 
+        this.boss = null;
+        this.bossDefeated = false;
+        if (isBossLevel(idx)) {
+            const bDef = getBossDef(idx);
+            const bossTx = Math.floor(level.width / 2);
+            const bossTy = Math.max(0, level.height - 5);
+            this.boss = new Boss(
+                Math.floor(idx / 5), bossTx, bossTy,
+                Math.max(0, bossTx - 5), Math.min(level.width - 1, bossTx + 5),
+                Sprites.RENDER_TILE, Sprites.RENDER_TILE
+            );
+        }
+
         this.hitSet.clear();
         this.particles = [];
         this.camX = 0;
@@ -275,6 +295,13 @@ export class Game {
                 this.player.getCenterX(), this.player.getCenterY(), !this.player.dead
             );
         });
+
+        if (this.boss && this.boss.alive) {
+            this.boss.update(
+                this.level.map, Sprites.RENDER_TILE, Sprites.RENDER_TILE,
+                this.player.getCenterX(), this.player.getCenterY(), !this.player.dead
+            );
+        }
 
         this._checkPlayerAttack();
         this._checkEnemyContact();
@@ -338,10 +365,15 @@ export class Game {
                     this._emitParticles(this.player.getCenterX(), this.player.getCenterY(), '#ff4444', 8, 3, -2);
                 }
             } else if (EXIT_IDS.has(t.tileId)) {
+                if (this.boss && this.boss.alive) return;
                 this.score += 200;
                 this.audio.levelComplete();
                 this._emitParticles(t.x + Sprites.RENDER_TILE / 2, t.y + Sprites.RENDER_TILE / 2, '#4caf50', 15, 3, -4);
-                this.state = 'LEVEL_COMPLETE';
+                if (this.bossDefeated) {
+                    this.state = 'QUEEN_RESCUED';
+                } else {
+                    this.state = 'LEVEL_COMPLETE';
+                }
                 return;
             } else if (CHECKPOINT_IDS.has(t.tileId)) {
                 const key = `${t.col},${t.row}`;
@@ -356,7 +388,7 @@ export class Game {
     }
 
     _checkPlayerAttack() {
-        if (!this.player.attacking) { this.hitSet.clear(); return; }
+        if (!this.player.attacking) { this.hitSet.clear(); this.bossHit = false; return; }
         const box = this.player.getAttackBox();
         if (!box) return;
         this.enemies.forEach((e, i) => {
@@ -372,6 +404,17 @@ export class Game {
                 }
             }
         });
+        if (this.boss && this.boss.alive && !this.bossHit && rectOverlap(box, this.boss)) {
+            this.boss.takeDamage(this.player.getCenterX());
+            this.bossHit = true;
+            this._emitParticles(this.boss.x + this.boss.w / 2, this.boss.y + this.boss.h / 2, '#ff6b6b', 8, 3, -3);
+            this.audio.enemyDeath();
+            if (!this.boss.alive) {
+                this.bossDefeated = true;
+                this.score += this.boss.config.score;
+                this._emitParticles(this.boss.x + this.boss.w / 2, this.boss.y + this.boss.h / 2, '#ffd700', 25, 4, -4);
+            }
+        }
     }
 
     _checkEnemyContact() {
@@ -387,6 +430,14 @@ export class Game {
                 }
             }
         });
+        if (this.boss && this.boss.alive && this.boss.canDamagePlayer() && rectOverlap(this.player, this.boss)) {
+            if (this.player.takeDamage(20)) {
+                this.player.knockback(this.boss.x + this.boss.w / 2);
+                this.boss.onPlayerHit();
+                this.audio.hit();
+                this._emitParticles(this.player.getCenterX(), this.player.getCenterY(), '#ff4444', 12, 4, -3);
+            }
+        }
     }
 
     _emitParticles(x, y, color, count, speedX, speedY) {
@@ -440,13 +491,13 @@ export class Game {
             case 'PAUSED':
                 this._renderWorld();
                 this._renderParticles();
-                this.ui.renderHUD(this.player, this.score, this.level.name, this.levelIdx + 1, getTotalLevels());
+                this.ui.renderHUD(this.player, this.score, this.level.name, this.levelIdx + 1, getTotalLevels(), this.boss);
                 if (this.state === 'PAUSED') this.ui.renderPause(this.score, this.level.name, this.pauseSel);
                 break;
             case 'LEVEL_COMPLETE':
                 this._renderWorld();
                 this._renderParticles();
-                this.ui.renderHUD(this.player, this.score, this.level.name, this.levelIdx + 1, getTotalLevels());
+                this.ui.renderHUD(this.player, this.score, this.level.name, this.levelIdx + 1, getTotalLevels(), this.boss);
                 this.ui.renderLevelComplete(this.level.name, this.score, 200);
                 break;
             case 'GAME_OVER':
@@ -455,6 +506,10 @@ export class Game {
                 break;
             case 'VICTORY':
                 this.ui.renderVictory(this.score);
+                break;
+            case 'QUEEN_RESCUED':
+                this._renderWorld();
+                this.ui.renderQueenRescued(this.score, this.level.name);
                 break;
         }
     }
@@ -502,6 +557,7 @@ export class Game {
         }
 
         this.enemies.forEach(e => e.render(ctx, cx, cy, Sprites.drawChar));
+        if (this.boss) this.boss.render(ctx, cx, cy);
         this.player.render(ctx, cx, cy, Sprites.drawChar);
     }
 

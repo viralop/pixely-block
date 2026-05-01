@@ -34,7 +34,7 @@ export class UI {
         }
     }
 
-    renderHUD(player, score, levelName, levelNum, totalLevels) {
+    renderHUD(player, score, levelName, levelNum, totalLevels, boss) {
         if (!player) return;
         const ctx = this.ctx;
         const pad = 12;
@@ -61,6 +61,14 @@ export class UI {
         this._box(infoX - 220, pad, 220, 50, 'rgba(0,0,0,0.7)', '#4a4a6a');
         this._text(`SCORE: ${score}`, infoX - 110, pad + 14, '8px "Press Start 2P"', '#ffd700', 'center');
         this._text(`${levelName}`, infoX - 110, pad + 36, '8px "Press Start 2P"', '#88ccff', 'center');
+
+        if (boss && boss.alive) {
+            this.menuBlink += 0.04;
+            const alpha = 0.6 + 0.4 * Math.sin(this.menuBlink * 6);
+            ctx.globalAlpha = alpha;
+            this._text('BOSS LEVEL', this.w / 2, pad + 14, '12px "Press Start 2P"', '#e74c3c');
+            ctx.globalAlpha = 1;
+        }
     }
 
     renderMenu(menuSel, menuItems) {
@@ -69,10 +77,11 @@ export class UI {
         ctx.fillRect(0, 0, this.w, this.h);
 
         const cx = this.w / 2;
-        this._text('PIXEL QUEST', cx, 60, this.fontTitle, '#ffd700');
-        this._text('A Platformer Adventure', cx, 100, '10px "Press Start 2P"', '#888');
+        this._text('PIXEL QUEST', cx, 40, this.fontTitle, '#ffd700');
+        this._text('A Knight\'s Journey to Save the Queen', cx, 75, '8px "Press Start 2P"', '#8be9fd');
+        this._text('Defeat the bosses every 5 levels!', cx, 95, '8px "Press Start 2P"', '#666');
 
-        const startY = 160;
+        const startY = 130;
         const itemH = 36;
 
         this.menuItems = menuItems;
@@ -173,6 +182,32 @@ export class UI {
         this.ctx.globalAlpha = alpha;
         this._text('Press ENTER to Play Again', cx, cy + 65, '10px "Press Start 2P"', '#fff');
         this.ctx.globalAlpha = 1;
+    }
+
+    renderQueenRescued(score, levelName) {
+        const cx = this.w / 2, cy = this.h / 2;
+        this._box(cx - 240, cy - 130, 480, 260, 'rgba(0,0,0,0.92)', '#ffd700');
+        this._text('QUEEN RESCUED!', cx, cy - 95, this.fontLarge, '#ffd700');
+        this._text('The knight has saved the queen!', cx, cy - 55, this.font, '#4caf50');
+        this._text(`Boss of ${levelName} defeated!`, cx, cy - 25, '10px "Press Start 2P"', '#e74c3c');
+        this._text(`Score: ${score}`, cx, cy + 15, '14px "Press Start 2P"', '#fff');
+
+        this.menuBlink += 0.04;
+        const alpha = 0.5 + 0.5 * Math.sin(this.menuBlink * 4);
+        this.ctx.globalAlpha = alpha;
+        this._text('Press ENTER to Continue', cx, cy + 65, '10px "Press Start 2P"', '#fff');
+        this.ctx.globalAlpha = 1;
+
+        const ctx = this.ctx;
+        ctx.save();
+        ctx.translate(cx + 100, cy - 20);
+        for (let i = 0; i < 8; i++) {
+            ctx.fillStyle = ['#ffd700', '#ff6b6b', '#4caf50', '#42a5f5'][i % 4];
+            const angle = (this.menuBlink * 3 + i * 0.8) % (Math.PI * 2);
+            const r = 40 + Math.sin(angle * 2) * 10;
+            ctx.fillRect(Math.cos(angle) * r - 3, Math.sin(angle) * r - 3, 6, 6);
+        }
+        ctx.restore();
     }
 
     renderLoading() {

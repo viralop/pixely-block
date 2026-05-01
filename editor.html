@@ -408,8 +408,8 @@ function buildPicker() {
     const tileCount = l.map ? l.map.flat().filter(t => t > 0).length : 0;
     const entCount = l.entities ? l.entities.length : 0;
     row.innerHTML = `<span class="pick-icon">${icon}</span><span class="pick-name" style="color:${l.builtin ? '#8be9fd' : '#ffd700'}">${l.name}</span><span class="pick-size">${l.w}x${l.h} | ${tileCount} tiles${entCount ? ' | ' + entCount + ' enemies' : ''}</span>`;
-    const mapData = l.map ? l.map.map(r => (r && r.slice) ? r.slice() : r) : mk(l.w || 45, l.h || 10);
-    const entData = Array.isArray(l.entities) ? l.entities.map(e => ({...e})) : [];
+    const mapData = l.map ? l.map.map(r => (Array.isArray(r) && r.slice) ? r.slice() : new Array(l.w || 45).fill(0)) : mk(l.w || 45, l.h || 10);
+    const entData = Array.isArray(l.entities) ? l.entities.filter(e => ENEMY_DEFS[e.type]).map(e => ({...e})) : [];
     row.onclick = () => startEditor(l.name, l.w, l.h, mapData, entData);
     list.appendChild(row);
   }
@@ -428,7 +428,7 @@ function startEditor(name, w, h, mapData, entData) {
   document.getElementById('editor').classList.add('active');
 
   resize();
-  camX = -100; camY = -100;
+  camX = 0; camY = 0;
   hist.reset(); updCount(); syncHScroll();
 }
 
@@ -632,7 +632,7 @@ function render() {
   const sc = Math.max(0, Math.floor(cx0 / RT)), ec = Math.min(levelW - 1, Math.ceil((cx0 + cv.width) / RT));
   const sr = Math.max(0, Math.floor(cy0 / RT)), er = Math.min(levelH - 1, Math.ceil((cy0 + cv.height) / RT));
   for (let r = sr; r <= er; r++) for (let c = sc; c <= ec; c++) {
-    const x = c * RT, y = r * RT, id = map[r][c];
+    const x = c * RT, y = r * RT, id = (map[r] && map[r][c]) || 0;
     if (id > 0) { const rc = getTileSrcRect(id); cx.drawImage(tileImg, rc.sx, rc.sy, TS, TS, x, y, RT, RT); }
     cx.strokeStyle = id > 0 ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.12)';
     cx.lineWidth = 1; cx.strokeRect(x + 0.5, y + 0.5, RT - 1, RT - 1);
@@ -643,6 +643,7 @@ function render() {
   const CS = 24, CCS = 9, RC = CS * SC;
   for (const en of entities) {
     const def = ENEMY_DEFS[en.type];
+    if (!def) continue;
     const ex = en.tx * RT, ey = en.ty * RT;
     cx.fillStyle = def.color + '33'; cx.fillRect(ex, ey, RT, RT);
     cx.strokeStyle = def.color; cx.lineWidth = 2; cx.setLineDash([4,3]); cx.strokeRect(ex + 1, ey + 1, RT - 2, RT - 2); cx.setLineDash([]);
@@ -712,8 +713,8 @@ function setMode(mode) {
   document.getElementById('toolbar-mode').textContent = 'Mode: ' + labels[mode];
   document.getElementById('entity-pick').style.display = mode === 'entity' ? 'flex' : 'none';
   cv.style.cursor = (mode === 'erase' || mode === 'entity') ? 'crosshair' : 'default';
-  if (mode === 'build') selectTile(DEFAULT_BUILD);
-  else if (mode === 'paint') selectTile(DEFAULT_PAINT);
+  if (mode === 'build' && !SOLID_TILES.has(selId)) selectTile(DEFAULT_BUILD);
+  else if (mode === 'paint' && SOLID_TILES.has(selId)) selectTile(DEFAULT_PAINT);
 }
 
 function setupUI() {

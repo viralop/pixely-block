@@ -16,6 +16,7 @@ const ASSET_PATHS = {
 
 let sheets = {};
 let bgCanvas = null;
+let extraSprites = {};
 
 export function isLoaded() {
     return sheets.tiles && sheets.characters && sheets.backgrounds;
@@ -25,8 +26,49 @@ export function loadAll() {
     return Promise.all([
         loadImage(ASSET_PATHS.tiles).then(img => sheets.tiles = img),
         loadImage(ASSET_PATHS.characters).then(img => sheets.characters = img),
-        loadImage(ASSET_PATHS.backgrounds).then(img => sheets.backgrounds = img)
+        loadImage(ASSET_PATHS.backgrounds).then(img => sheets.backgrounds = img),
+        loadExtraSprites()
     ]);
+}
+
+function loadExtraSprites() {
+    const paths = {
+        knight_idle: 'kenney_pixel-platformer/human chars/tile_10094.png',
+        knight_run: 'kenney_pixel-platformer/human chars/tile_10091.png',
+        knight_atk1: 'kenney_pixel-platformer/human chars/tile_10088.png',
+        knight_atk2: 'kenney_pixel-platformer/human chars/tile_10089.png',
+        queen: 'kenney_pixel-platformer/human chars/tile_10092.png',
+        boss1: 'kenney_pixel-platformer/bosses/tile_10085.png',
+        boss2: 'kenney_pixel-platformer/bosses/tile_10086.png',
+        boss3: 'kenney_pixel-platformer/bosses/tile_10087.png',
+        boss4: 'kenney_pixel-platformer/bosses/tile_10093.png',
+        boss5: 'kenney_pixel-platformer/bosses/tile_10095.png',
+        boss_lvl: 'kenney_pixel-platformer/human chars/tile_10090.png'
+    };
+    const promises = [];
+    for (const [key, path] of Object.entries(paths)) {
+        promises.push(loadImage(path).then(img => { extraSprites[key] = img; }).catch(() => {}));
+    }
+    return Promise.all(promises);
+}
+
+export function drawExtra(ctx, key, screenX, screenY, size, flipH = false) {
+    const img = extraSprites[key];
+    if (!img) return;
+    ctx.imageSmoothingEnabled = false;
+    if (flipH) {
+        ctx.save();
+        ctx.translate(Math.round(screenX) + size, Math.round(screenY));
+        ctx.scale(-1, 1);
+        ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, size, size);
+        ctx.restore();
+    } else {
+        ctx.drawImage(img, 0, 0, img.width, img.height, Math.round(screenX), Math.round(screenY), size, size);
+    }
+}
+
+export function hasExtra(key) {
+    return !!extraSprites[key];
 }
 
 function loadImage(src) {

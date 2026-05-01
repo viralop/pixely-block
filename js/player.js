@@ -1,4 +1,4 @@
-import { RENDER_CHAR, RENDER_TILE, SCALE, CHAR_SIZE } from './renderer.js';
+import { RENDER_CHAR, RENDER_TILE, SCALE, CHAR_SIZE, drawExtra, hasExtra } from './renderer.js';
 import { moveEntity, isSolid, isLadder, isRope, getTileAt, HAZARD_IDS, COIN_IDS, HEART_IDS, getTilesInRegion, rectOverlap } from './collision.js';
 
 const GRAVITY = 0.48;
@@ -7,7 +7,7 @@ const MOVE_ACCEL = 0.7;
 const MOVE_DECEL = 0.35;
 const MAX_SPEED = 4.5;
 const ATTACK_DURATION = 16;
-const ATTACK_RANGE = 55;
+const ATTACK_RANGE = 45;
 const IFRAME_DURATION = 45;
 const KNOCKBACK_X = 6;
 const KNOCKBACK_Y = -6;
@@ -214,7 +214,7 @@ export class Player {
 
     getAttackBox() {
         if (!this.attacking || this.attackTimer < ATTACK_DURATION - 8) return null;
-        return { x: this.facing > 0 ? this.x + this.w : this.x - ATTACK_RANGE, y: this.y + 5, w: ATTACK_RANGE, h: this.h - 10 };
+        return { x: this.facing > 0 ? this.x + this.w : this.x - ATTACK_RANGE, y: this.y + 10, w: ATTACK_RANGE, h: this.h - 20 };
     }
 
     getCenterX() { return this.x + this.w / 2; }
@@ -223,15 +223,35 @@ export class Player {
     render(ctx, camX, camY, drawCharFn) {
         if (this.dead) return;
         if (this.iframes > 0 && Math.floor(this.iframes / 3) % 2 === 0) return;
-        let charId;
-        if (this.climbing) charId = CHAR_IDS.jump;
-        else if (this.onRope) charId = CHAR_IDS.idle;
-        else if (this.attacking) charId = CHAR_IDS.attack;
-        else if (!this.onGround) charId = this.vy < 0 ? CHAR_IDS.jump : CHAR_IDS.fall;
-        else if (Math.abs(this.vx) > 0.5) charId = this.runFrames[this.animFrame];
-        else charId = CHAR_IDS.idle;
         const drawX = this.x - camX - (RENDER_CHAR - this.w) / 2;
         const drawY = this.y - camY - (RENDER_CHAR - this.h);
-        drawCharFn(ctx, charId, drawX, drawY, this.facing > 0);
+        const sz = RENDER_CHAR + 1;
+        const flip = this.facing < 0;
+        const isAttacking = this.attacking;
+        if (hasExtra('knight_idle')) {
+            let key = 'knight_idle';
+            if (this.climbing) key = 'knight_idle';
+            else if (this.onRope) key = 'knight_idle';
+            else if (!this.onGround) key = this.vy < 0 ? 'knight_run' : 'knight_idle';
+            else if (Math.abs(this.vx) > 0.5) key = this.animFrame % 2 === 0 ? 'knight_run' : 'knight_idle';
+            drawExtra(ctx, key, drawX, drawY, sz, flip);
+            if (isAttacking) {
+                const atkKey = (this.attackTimer % 6 < 3) ? 'knight_atk1' : 'knight_atk2';
+                const swordOff = this.facing > 0 ? RENDER_CHAR * 0.6 : -RENDER_CHAR * 0.6;
+                drawExtra(ctx, atkKey, drawX + swordOff, drawY, sz, flip);
+            }
+        } else {
+            let charId;
+            if (this.climbing) charId = CHAR_IDS.jump;
+            else if (this.onRope) charId = CHAR_IDS.idle;
+            else if (!this.onGround) charId = this.vy < 0 ? CHAR_IDS.jump : CHAR_IDS.fall;
+            else if (Math.abs(this.vx) > 0.5) charId = this.runFrames[this.animFrame];
+            else charId = CHAR_IDS.idle;
+            drawCharFn(ctx, charId, drawX, drawY, flip);
+            if (isAttacking) {
+                const swordOff = this.facing > 0 ? RENDER_CHAR * 0.6 : -RENDER_CHAR * 0.6;
+                drawCharFn(ctx, CHAR_IDS.attack, drawX + swordOff, drawY, flip);
+            }
+        }
     }
 }
