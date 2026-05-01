@@ -257,8 +257,7 @@ const DEFAULT_BUILD = 49;
 const DEFAULT_PAINT = 28;
 
 function getPlaceId() {
-  if (editMode === 'build') return SOLID_TILES.has(selId) ? selId : DEFAULT_BUILD;
-  if (editMode === 'paint') return !SOLID_TILES.has(selId) ? selId : DEFAULT_PAINT;
+  if (editMode === 'erase') return 0;
   return selId;
 }
 
