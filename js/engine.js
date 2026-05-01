@@ -37,6 +37,7 @@ export class Game {
         this.frameCount = 0;
         this.coinAnimId = 179;
         this.checkpointAnimId = 139;
+        this.waterAnimFrame = 0;
         this.activatedCheckpoints = new Set();
         this.triggeredSprings = new Map();
         this.lastTime = 0;
@@ -274,6 +275,7 @@ export class Game {
         if (this.frameCount % 15 === 0) {
             this.coinAnimId = this.coinAnimId === 179 ? 180 : 179;
             this.checkpointAnimId = this.checkpointAnimId === 139 ? 140 : 139;
+            this.waterAnimFrame = (this.waterAnimFrame + 1) % 3;
         }
 
         this._checkSpringBounce();
@@ -543,6 +545,12 @@ export class Game {
                 if (id === 135 || id === 136) {
                     const key = `${row},${col}`;
                     id = this.triggeredSprings.has(key) ? 136 : 135;
+                }
+                if (id === 62 || id === 102 || id === 103) {
+                    id = this.waterAnimFrame === 0 ? 102 : 103;
+                }
+                if (id === 61 || id === 81) {
+                    id = this.waterAnimFrame === 0 ? 61 : 81;
                 }
                 if (id > 0) {
                     Sprites.drawTile(ctx, id, col * Sprites.RENDER_TILE - cx, row * Sprites.RENDER_TILE - cy);
