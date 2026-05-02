@@ -1,7 +1,7 @@
 import * as Sprites from './renderer.js';
 import { Input } from './input.js';
 import { Audio } from './audio.js';
-import { UI } from './ui.js';
+import { UI, INTRO_LINES } from './ui.js';
 import { Player } from './player.js';
 import { Enemy } from './enemy.js';
 import { Boss, getBossDef, isBossLevel } from './boss.js';
@@ -22,6 +22,8 @@ export class Game {
         this.ui = new UI(this.ctx, this.W, this.H);
 
         this.state = 'LOADING';
+        this.introLine = 0;
+        this.introTimer = 0;
         this.score = 0;
         this.levelIdx = 0;
         this.level = null;
@@ -111,6 +113,14 @@ export class Game {
 
     _update() {
         switch (this.state) {
+            case 'INTRO':
+                this.introTimer++;
+                if (this.introTimer % 45 === 0 && this.introLine < INTRO_LINES.length) this.introLine++;
+                if (this.input.enter || this.input.jumpPressed) {
+                    if (this.introLine < INTRO_LINES.length) { this.introLine = INTRO_LINES.length; this.introTimer = 0; }
+                    else { this._startAfterIntro(); }
+                }
+                break;
             case 'MENU':
                 this._updateMenu();
                 break;
@@ -194,6 +204,12 @@ export class Game {
         this.score = 0;
         this.levelIdx = 0;
         this.customMode = false;
+        this.introLine = 0;
+        this.introTimer = 0;
+        this.state = 'INTRO';
+    }
+
+    _startAfterIntro() {
         this._loadLevel(0);
     }
 
@@ -531,6 +547,9 @@ export class Game {
             case 'LOADING':
                 this.ui.renderLoading();
                 break;
+            case 'INTRO':
+                this.ui.renderIntro(this.introLine, this.introTimer);
+                break;
             case 'MENU':
                 this.ui.renderMenu(this.menuSel, this.menuItems);
                 break;
@@ -556,7 +575,7 @@ export class Game {
                 break;
             case 'QUEEN_RESCUED':
                 this._renderWorld();
-                this.ui.renderQueenRescued(this.score, this.level.name);
+                this.ui.renderQueenRescued(this.score, this.level.name, Math.floor(this.levelIdx / 5));
                 break;
         }
     }

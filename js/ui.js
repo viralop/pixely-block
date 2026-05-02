@@ -1,5 +1,50 @@
 import { drawTile } from './renderer.js';
 
+export const INTRO_LINES = [
+    'The kingdom has fallen silent.',
+    'The Queen has been kidnapped.',
+    'A dark force drags her deeper',
+    'into the shadows with every step.',
+    '',
+    'You are the last knight.',
+    'Your blade is all that remains.',
+    '',
+    'Find her. Save her. No matter the cost.'
+];
+
+const BOSS_STORY = [
+    [
+        'The Queen is safe... for now.',
+        'But shadows curl around her.',
+        'She vanishes into the dark once more.',
+        'The journey is far from over.'
+    ],
+    [
+        'Again you reach her side.',
+        'Her eyes filled with fear and sorrow.',
+        '"Something is controlling this..."',
+        'Then she is gone... pulled into the void.'
+    ],
+    [
+        'You fought through hell to find her.',
+        'She touches your hand for a moment.',
+        '"I can feel it watching us..."',
+        'The shadows swallow her again.'
+    ],
+    [
+        'She looks at you with tired eyes.',
+        '"You keep coming for me."',
+        '"Why won\'t they let me go?"',
+        'Before you can answer... she fades away.'
+    ],
+    [
+        'This time she doesn\'t scream.',
+        'She just smiles... and points ahead.',
+        '"End this. Break the cycle."',
+        'The darkness pulls her one final time.'
+    ]
+];
+
 export class UI {
     constructor(ctx, canvasW, canvasH) {
         this.ctx = ctx;
@@ -177,42 +222,71 @@ export class UI {
 
     renderVictory(score) {
         const cx = this.w / 2, cy = this.h / 2;
-        this._box(cx - 220, cy - 100, 440, 200, 'rgba(0,0,0,0.9)', '#ffd700');
-        this._text('CONGRATULATIONS!', cx, cy - 65, this.fontLarge, '#ffd700');
-        this._text('You completed all levels!', cx, cy - 25, this.font, '#4caf50');
-        this._text(`Final Score: ${score}`, cx, cy + 15, '14px "Press Start 2P"', '#fff');
+        this._box(cx - 240, cy - 120, 480, 240, 'rgba(0,0,0,0.92)', '#ffd700');
+        this._text('THE END', cx, cy - 85, this.fontLarge, '#ffd700');
+        this._text('The darkness has been broken.', cx, cy - 45, '10px "Press Start 2P"', '#4caf50');
+        this._text('The Queen is free at last.', cx, cy - 20, '10px "Press Start 2P"', '#ccc');
+        this._text('The knight sheathes his blade.', cx, cy + 5, '10px "Press Start 2P"', '#ccc');
+        this._text('And walks into the dawn.', cx, cy + 30, '10px "Press Start 2P"', '#88ccff');
+        this._text(`Final Score: ${score}`, cx, cy + 65, '12px "Press Start 2P"', '#fff');
 
         this.menuBlink += 0.04;
         const alpha = 0.5 + 0.5 * Math.sin(this.menuBlink * 4);
         this.ctx.globalAlpha = alpha;
-        this._text('Press ENTER to Play Again', cx, cy + 65, '10px "Press Start 2P"', '#fff');
+        this._text('Press ENTER to Play Again', cx, cy + 100, '10px "Press Start 2P"', '#e94560');
         this.ctx.globalAlpha = 1;
     }
 
-    renderQueenRescued(score, levelName) {
+    renderQueenRescued(score, levelName, bossNum) {
         const cx = this.w / 2, cy = this.h / 2;
-        this._box(cx - 240, cy - 130, 480, 260, 'rgba(0,0,0,0.92)', '#ffd700');
-        this._text('QUEEN RESCUED!', cx, cy - 95, this.fontLarge, '#ffd700');
-        this._text('The knight has saved the queen!', cx, cy - 55, this.font, '#4caf50');
-        this._text(`Boss of ${levelName} defeated!`, cx, cy - 25, '10px "Press Start 2P"', '#e74c3c');
-        this._text(`Score: ${score}`, cx, cy + 15, '14px "Press Start 2P"', '#fff');
+        this._box(cx - 260, cy - 140, 520, 280, 'rgba(0,0,0,0.92)', '#ffd700');
 
         this.menuBlink += 0.04;
+
+        this._text('THE QUEEN IS FOUND', cx, cy - 110, '14px "Press Start 2P"', '#ffd700');
+
+        const lines = BOSS_STORY[bossNum % BOSS_STORY.length];
+        const startY = cy - 60;
+        for (let i = 0; i < lines.length; i++) {
+            this._text(lines[i], cx, startY + i * 28, '10px "Press Start 2P"', '#ccc');
+        }
+
+        this._text(`Score: ${score}`, cx, cy + 70, '12px "Press Start 2P"', '#fff');
+
         const alpha = 0.5 + 0.5 * Math.sin(this.menuBlink * 4);
         this.ctx.globalAlpha = alpha;
-        this._text('Press ENTER to Continue', cx, cy + 65, '10px "Press Start 2P"', '#fff');
+        this._text('Press ENTER to Continue', cx, cy + 110, '10px "Press Start 2P"', '#fff');
         this.ctx.globalAlpha = 1;
+    }
 
+    renderIntro(lineIdx, timer) {
         const ctx = this.ctx;
-        ctx.save();
-        ctx.translate(cx + 100, cy - 20);
-        for (let i = 0; i < 8; i++) {
-            ctx.fillStyle = ['#ffd700', '#ff6b6b', '#4caf50', '#42a5f5'][i % 4];
-            const angle = (this.menuBlink * 3 + i * 0.8) % (Math.PI * 2);
-            const r = 40 + Math.sin(angle * 2) * 10;
-            ctx.fillRect(Math.cos(angle) * r - 3, Math.sin(angle) * r - 3, 6, 6);
+        const cx = this.w / 2, cy = this.h / 2;
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, this.w, this.h);
+
+        const visibleLines = Math.min(lineIdx, INTRO_LINES.length);
+
+        for (let i = 0; i < INTRO_LINES.length; i++) {
+            const line = INTRO_LINES[i];
+            if (!line) continue;
+            if (i > visibleLines) break;
+            let alpha = 1;
+            if (i === visibleLines && lineIdx < INTRO_LINES.length) {
+                alpha = Math.min(1, (timer % 60) / 30);
+            }
+            ctx.globalAlpha = alpha;
+            this._text(line, cx, cy - 80 + i * 24, '10px "Press Start 2P"', i >= 7 ? '#ffd700' : '#ccc');
+            ctx.globalAlpha = 1;
         }
-        ctx.restore();
+
+        if (lineIdx >= INTRO_LINES.length) {
+            this.menuBlink += 0.04;
+            const alpha = 0.5 + 0.5 * Math.sin(this.menuBlink * 4);
+            ctx.globalAlpha = alpha;
+            this._text('Press ENTER to Begin', cx, cy + 100, '10px "Press Start 2P"', '#e94560');
+            ctx.globalAlpha = 1;
+        }
     }
 
     renderLoading() {
