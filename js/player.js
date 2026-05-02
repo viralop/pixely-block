@@ -244,12 +244,19 @@ export class Player {
             drawExtra(ctx, key, drawX, drawY, sz, flip);
             if (isAttacking) {
                 const swordOff = this.facing > 0 ? RENDER_CHAR * 0.6 : -RENDER_CHAR * 0.6;
+                const swingAngle = Math.sin((this.attackTimer / 16) * Math.PI) * 1.4;
+                ctx.save();
+                const pivotX = drawX + sz * 0.8;
+                const pivotY = drawY + sz * 0.35;
+                ctx.translate(pivotX, pivotY);
+                ctx.rotate(-swingAngle);
                 if (hasExtra('sword')) {
-                    drawExtra(ctx, 'sword', drawX + swordOff, drawY, sz, flip);
+                    drawExtra(ctx, 'sword', -sz * 0.1, -sz * 0.3, sz, flip);
                 } else {
                     const atkKey = (this.attackTimer % 6 < 3) ? 'knight_atk1' : 'knight_atk2';
-                    drawExtra(ctx, atkKey, drawX + swordOff, drawY, sz, flip);
+                    drawExtra(ctx, atkKey, -sz * 0.1, -sz * 0.3, sz, flip);
                 }
+                ctx.restore();
             }
         } else {
             let charId;
