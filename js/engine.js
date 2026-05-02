@@ -256,13 +256,18 @@ export class Game {
 
         this.boss = null;
         this.bossDefeated = false;
+        this.bossArenaActive = false;
+        this.bossArenaLeft = 0;
         if (isBossLevel(idx)) {
             const bDef = getBossDef(idx);
-            const bossTx = Math.floor(level.width / 2);
-            const bossTy = Math.max(0, level.height - 5);
+            const exitTx = level.exit ? level.exit.tx : level.width - 2;
+            const exitTy = level.exit ? level.exit.ty : level.height - 2;
+            const bossTx = Math.max(0, exitTx - 3);
+            const bossTy = exitTy;
+            this.bossArenaLeft = Math.max(0, bossTx - 6) * Sprites.RENDER_TILE;
             this.boss = new Boss(
                 Math.floor(idx / 5), bossTx, bossTy,
-                Math.max(0, bossTx - 5), Math.min(level.width - 1, bossTx + 5),
+                Math.max(0, bossTx - 6), Math.min(level.width - 1, bossTx + 3),
                 Sprites.RENDER_TILE, Sprites.RENDER_TILE
             );
         }
@@ -359,6 +364,24 @@ export class Game {
                 this.player.getCenterX(), this.player.getCenterY(), !this.player.dead,
                 this.level.solidMap
             );
+
+            if (!this.bossArenaActive && this.player.x + this.player.w > this.bossArenaLeft) {
+                this.bossArenaActive = true;
+            }
+            if (this.bossArenaActive) {
+                if (this.player.x < this.bossArenaLeft) {
+                    this.player.x = this.bossArenaLeft;
+                    this.player.vx = 0;
+                }
+            }
+
+            if (this.boss.checkAxeHit(this.player)) {
+                if (this.player.takeDamage(15)) {
+                    this.player.knockback(this.boss.x + this.boss.w / 2);
+                    this.audio.hit();
+                    this._emitParticles(this.player.getCenterX(), this.player.getCenterY(), '#ff4444', 8, 3, -2);
+                }
+            }
         }
 
         this._checkPlayerAttack();

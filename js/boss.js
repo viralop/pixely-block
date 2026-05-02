@@ -2,15 +2,17 @@ import { RENDER_TILE, RENDER_CHAR, SCALE, CHAR_SIZE, drawExtra, hasExtra } from 
 import { moveEntity, isSolid, getTileAt, getTilesInRegion, rectOverlap } from './collision.js';
 
 const GRAVITY = 0.45;
+const AXE_SPEED = 5;
+const AXE_COOLDOWN = 80;
 
 const BOSS_DEFS = [
-    { name: 'Dark Orc', hp: 20, speed: 1.0, chaseSpeed: 2.0, chaseRange: 300, score: 500, sprites: ['boss1', 'boss2'], width: 1.0, height: 1.0 },
-    { name: 'Shadow Knight', hp: 30, speed: 1.2, chaseSpeed: 2.5, chaseRange: 350, score: 800, sprites: ['boss3', 'boss4'], width: 1.0, height: 1.0 },
-    { name: 'Demon Lord', hp: 50, speed: 1.5, chaseSpeed: 3.0, chaseRange: 400, score: 1500, sprites: ['boss5', 'boss1'], width: 1.2, height: 1.2 }
+    { name: 'Dark Orc', hp: 20, speed: 1.0, chaseSpeed: 2.0, chaseRange: 300, score: 500, sprite: 'boss1', width: 1.0, height: 1.0 },
+    { name: 'Shadow Knight', hp: 30, speed: 1.2, chaseSpeed: 2.5, chaseRange: 350, score: 800, sprite: 'boss3', width: 1.0, height: 1.0 },
+    { name: 'Demon Lord', hp: 50, speed: 1.5, chaseSpeed: 3.0, chaseRange: 400, score: 1500, sprite: 'boss5', width: 1.2, height: 1.2 }
 ];
 
 export class Boss {
-    constructor(bossIdx, tileX, tileY, patrolLeft, patrolRight, tileW, tileH) {
+    constructor(bossIdx, tileX, tileY, arenaLeft, arenaRight, tileW, tileH) {
         const def = BOSS_DEFS[bossIdx % BOSS_DEFS.length];
         this.name = def.name;
         this.config = def;
@@ -24,14 +26,14 @@ export class Boss {
         this.hp = def.hp;
         this.alive = true;
         this.facing = -1;
-        this.patrolLeft = patrolLeft * tileW;
-        this.patrolRight = patrolRight * tileW;
+        this.arenaLeft = arenaLeft * tileW;
+        this.arenaRight = arenaRight * tileW;
         this.patrolDir = 1;
         this.hitTimer = 0;
         this.attackCooldown = 0;
-        this.animFrame = 0;
         this.animTimer = 0;
         this.phase = 0;
+        this.axes = [];
     }
 
     update(solidMap, tileW, tileH, playerX, playerY, playerAlive, customSolidMap) {
@@ -55,8 +57,8 @@ export class Boss {
         } else {
             this.vx = this.config.speed * this.patrolDir;
             this.facing = this.patrolDir;
-            if (this.x <= this.patrolLeft) this.patrolDir = 1;
-            if (this.x + this.w >= this.patrolRight) this.patrolDir = -1;
+            if (this.x <= this.arenaLeft) this.patrolDir = 1;
+            if (this.x + this.w >= this.arenaRight) this.patrolDir = -1;
         }
 
         this.vy += GRAVITY;
@@ -64,10 +66,44 @@ export class Boss {
         const grounded = moveEntity(this, this.vx, this.vy, solidMap, tileW, tileH, customSolidMap);
         if (grounded) this.vy = 0;
 
+        if (this.attackCooldown <= 0 && playerAlive) {
+            this._throwAxe(playerX, playerY);
+            this.attackCooldown = this.phase === 1 ? AXE_COOLDOWN * 0.6 : AXE_COOLDOWN;
+        }
+
+        this._updateAxes();
+
         this.animTimer++;
-        if (this.animTimer >= 12) {
-            this.animTimer = 0;
-            this.animFrame = (this.animFrame + 1) % this.config.sprites.length;
+    }
+
+    _throwAxe(playerX, playerY) {
+        const cx = this.x + this.w / 2;
+        const cy = this.y + this.h / 2;
+        const dx = playerX - cx;
+        const dy = playerY - cy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist === 0) return;
+        const ax = 16;
+        const ay = 16;
+        this.axes.push({
+            x: cx - ax / 2,
+            y: cy - ay / 2,
+            w: ax, h: ay,
+            vx: (dx / dist) * AXE_SPEED,
+            vy: (dy / dist) * AXE_SPEED,
+            life: 120,
+            rotation: 0
+        });
+    }
+
+    _updateAxes() {
+        for (let i = this.axes.length - 1; i >= 0; i--) {
+            const a = this.axes[i];
+            a.x += a.vx;
+            a.y += a.vy;
+            a.rotation += 0.2;
+            a.life--;
+            if (a.life <= 0) { this.axes.splice(i, 1); }
         }
     }
 
@@ -91,16 +127,40 @@ export class Boss {
         this.attackCooldown = 40;
     }
 
+    checkAxeHit(player) {
+        for (let i = this.axes.length - 1; i >= 0; i--) {
+            if (rectOverlap(player, this.axes[i])) {
+                this.axes.splice(i, 1);
+                return true;
+            }
+        }
+        return false;
+    }
+
     render(ctx, camX, camY) {
         if (!this.alive) return;
         if (this.hitTimer > 0 && Math.floor(this.hitTimer / 2) % 2 === 0) return;
 
-        const spriteKey = this.config.sprites[this.animFrame];
+        const spriteKey = this.config.sprite;
         const drawX = this.x - camX - (RENDER_CHAR - this.w) / 2;
         const drawY = this.y - camY - (RENDER_CHAR - this.h);
 
         if (hasExtra(spriteKey)) {
             drawExtra(ctx, spriteKey, drawX, drawY, RENDER_CHAR + 1, this.facing < 0);
+        }
+
+        for (const a of this.axes) {
+            if (hasExtra('axe')) {
+                ctx.save();
+                const asx = Math.round(a.x - camX + a.w / 2);
+                const asy = Math.round(a.y - camY + a.h / 2);
+                ctx.translate(asx, asy);
+                ctx.rotate(a.rotation);
+                ctx.imageSmoothingEnabled = false;
+                const img = document.createElement ? null : null;
+                drawExtra(ctx, 'axe', -18, -18, 36, false);
+                ctx.restore();
+            }
         }
 
         this._renderHpBar(ctx, camX, camY);
