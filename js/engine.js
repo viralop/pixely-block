@@ -6,7 +6,7 @@ import { Player } from './player.js';
 import { Enemy } from './enemy.js';
 import { Boss, getBossDef, isBossLevel } from './boss.js';
 import { getLevel, getTotalLevels, getCustomLevels, getCustomLevel, seedBuiltInLevels } from './levels.js';
-import { rectOverlap, HAZARD_IDS, COIN_IDS, HEART_IDS, EXIT_IDS, SPRING_IDS, CHECKPOINT_IDS, getTilesInRegion, getTileAt, isSolid } from './collision.js';
+import { rectOverlap, HAZARD_IDS, COIN_IDS, HEART_IDS, EXIT_IDS, SPRING_IDS, CHECKPOINT_IDS, KEY_IDS, LOCK_IDS, getTilesInRegion, getTileAt, isSolid } from './collision.js';
 
 const FIXED_DT = 1000 / 60;
 const SPRING_FORCE = -16;
@@ -40,6 +40,7 @@ export class Game {
         this.waterAnimFrame = 0;
         this.activatedCheckpoints = new Set();
         this.triggeredSprings = new Map();
+        this.hasKey = false;
         this.lastTime = 0;
         this.accumulator = 0;
 
@@ -251,6 +252,7 @@ export class Game {
         }
 
         this.hitSet.clear();
+        this.hasKey = false;
         this.particles = [];
         this.camX = 0;
         this.camY = 0;
@@ -293,6 +295,39 @@ export class Game {
         }
 
         this._checkTileInteractions();
+
+        if (this.hasKey) {
+            const RT = Sprites.RENDER_TILE;
+            const map = this.level.map;
+            const mh = map.length, mw = map[0].length;
+            const pc = Math.floor((this.player.x + this.player.w / 2) / RT);
+            const pr = Math.floor((this.player.y + this.player.h / 2) / RT);
+            let found = false;
+            for (let dr = -2; dr <= 2 && !found; dr++) {
+                for (let dc = -2; dc <= 2 && !found; dc++) {
+                    const r = pr + dr, c = pc + dc;
+                    if (r >= 0 && r < mh && c >= 0 && c < mw && LOCK_IDS.has(map[r][c])) {
+                        found = true;
+                        this.hasKey = false;
+                        this.audio.coin();
+                        const stack = [[r, c]];
+                        const visited = new Set();
+                        while (stack.length > 0) {
+                            const [cr, cc] = stack.pop();
+                            const vk = cr * mw + cc;
+                            if (visited.has(vk)) continue;
+                            if (cr < 0 || cr >= mh || cc < 0 || cc >= mw) continue;
+                            if (!LOCK_IDS.has(map[cr][cc])) continue;
+                            visited.add(vk);
+                            map[cr][cc] = 0;
+                            if (this.level.solidMap) this.level.solidMap[cr][cc] = false;
+                            this._emitParticles(cc * RT + RT / 2, cr * RT + RT / 2, '#ff6b6b', 4, 2, -2);
+                            stack.push([cr - 1, cc], [cr + 1, cc], [cr, cc - 1], [cr, cc + 1]);
+                        }
+                    }
+                }
+            }
+        }
 
         this.enemies.forEach(e => {
             e.update(
@@ -390,6 +425,11 @@ export class Game {
                     this.player.spawnY = t.row * Sprites.RENDER_TILE;
                     this._emitParticles(t.x + Sprites.RENDER_TILE / 2, t.y + Sprites.RENDER_TILE / 2, '#4fc3f7', 10, 2, -3);
                 }
+            } else if (KEY_IDS.has(t.tileId)) {
+                this.level.map[t.row][t.col] = 0;
+                this.hasKey = true;
+                this.audio.coin();
+                this._emitParticles(t.x + Sprites.RENDER_TILE / 2, t.y + Sprites.RENDER_TILE / 2, '#ffd700', 8, 2, -3);
             }
         }
     }
@@ -498,13 +538,13 @@ export class Game {
             case 'PAUSED':
                 this._renderWorld();
                 this._renderParticles();
-                this.ui.renderHUD(this.player, this.score, this.level.name, this.levelIdx + 1, getTotalLevels(), this.boss);
+                this.ui.renderHUD(this.player, this.score, this.level.name, this.levelIdx + 1, getTotalLevels(), this.boss, this.hasKey);
                 if (this.state === 'PAUSED') this.ui.renderPause(this.score, this.level.name, this.pauseSel);
                 break;
             case 'LEVEL_COMPLETE':
                 this._renderWorld();
                 this._renderParticles();
-                this.ui.renderHUD(this.player, this.score, this.level.name, this.levelIdx + 1, getTotalLevels(), this.boss);
+                this.ui.renderHUD(this.player, this.score, this.level.name, this.levelIdx + 1, getTotalLevels(), this.boss, this.hasKey);
                 this.ui.renderLevelComplete(this.level.name, this.score, 200);
                 break;
             case 'GAME_OVER':

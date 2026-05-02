@@ -533,15 +533,38 @@ export function getCustomLevel(name) {
     const levels = getCustomLevels();
     const entry = levels.find(l => l.name === name);
     if (!entry) return null;
+    const map = entry.map.map(r => r.slice());
+    const h = map.length, w = map[0].length;
+    const ap = entry.actionPoints || {};
+    let spawn = ap.start ? { tx: ap.start.tx, ty: ap.start.ty } : null;
+    let exit = ap.end ? { tx: ap.end.tx, ty: ap.end.ty } : null;
+    if (!spawn) {
+        for (let r = h - 1; r >= 0; r--) {
+            for (let c = 0; c < w; c++) {
+                if ((map[r][c] === 0 || map[r][c] === 178) && r + 1 < h && map[r + 1][c] !== 0) {
+                    spawn = { tx: c, ty: r }; r = -1; break;
+                }
+            }
+        }
+        if (!spawn) spawn = { tx: 1, ty: h - 2 };
+    }
+    if (!exit) {
+        for (let r = 0; r < h; r++) {
+            for (let c = 0; c < w; c++) {
+                if (map[r][c] === 178) { exit = { tx: c, ty: r }; r = h; break; }
+            }
+        }
+        if (!exit) exit = { tx: w - 2, ty: h - 2 };
+    }
+    if (exit && map[exit.ty][exit.tx] !== 178) map[exit.ty][exit.tx] = 178;
     return {
         name: entry.name,
-        width: entry.w,
-        height: entry.h,
+        width: w,
+        height: h,
         theme: 'grass',
         bgColor: '#1a2a1a',
-        spawn: { tx: 1, ty: entry.h - 2 },
-        exit: { tx: entry.w - 2, ty: entry.h - 2 },
-        map: entry.map.map(r => r.slice()),
+        spawn, exit,
+        map,
         solidMap: entry.solidMap ? entry.solidMap.map(r => r.slice()) : null,
         entities: (entry.entities || []).map(e => ({...e})),
         decorations: []

@@ -34,7 +34,7 @@ export class UI {
         }
     }
 
-    renderHUD(player, score, levelName, levelNum, totalLevels, boss) {
+    renderHUD(player, score, levelName, levelNum, totalLevels, boss, hasKey) {
         if (!player) return;
         const ctx = this.ctx;
         const pad = 12;
@@ -68,6 +68,11 @@ export class UI {
             ctx.globalAlpha = alpha;
             this._text('BOSS LEVEL', this.w / 2, pad + 14, '12px "Press Start 2P"', '#e74c3c');
             ctx.globalAlpha = 1;
+        }
+
+        if (hasKey) {
+            drawTile(ctx, 55, pad + maxHearts * 22 + 40, pad + 8);
+            this._text('KEY', pad + maxHearts * 22 + 72, pad + 18, '8px "Press Start 2P"', '#ffd700');
         }
     }
 

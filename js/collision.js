@@ -68,10 +68,12 @@ const SOLID_SET = new Set([
     49, 50, 51,
     60, 80, 100,
     76, 78,
-    181, 182, 183
+    181, 182, 183,
+    56
 ]);
 
 export function isSolid(tileId, customSolidMap, row, col) {
+    if (KEY_IDS.has(tileId) || COIN_IDS.has(tileId) || HEART_IDS.has(tileId) || EXIT_IDS.has(tileId) || HAZARD_IDS.has(tileId) || SPRING_IDS.has(tileId) || LADDER_IDS.has(tileId) || ROPE_IDS.has(tileId) || CHECKPOINT_IDS.has(tileId)) return false;
     if (customSolidMap) {
         return !!(customSolidMap[row] && customSolidMap[row][col]);
     }
@@ -86,6 +88,8 @@ export const LADDER_IDS = new Set([79, 99]);
 export const ROPE_IDS = new Set([118, 119, 120]);
 export const SPRING_IDS = new Set([135, 136]);
 export const CHECKPOINT_IDS = new Set([139, 140]);
+export const KEY_IDS = new Set([55]);
+export const LOCK_IDS = new Set([56]);
 
 export function isLadder(tileId) { return LADDER_IDS.has(tileId); }
 export function isRope(tileId) { return ROPE_IDS.has(tileId); }

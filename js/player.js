@@ -96,6 +96,9 @@ export class Player {
         this.vy += GRAVITY;
         if (this.vy > 12) this.vy = 12;
         this.onGround = moveEntity(this, this.vx, this.vy, solidMap, tileW, tileH, customSolidMap);
+        const worldW = solidMap[0].length * tileW;
+        if (this.x < 0) { this.x = 0; this.vx = 0; }
+        if (this.x + this.w > worldW) { this.x = worldW - this.w; this.vx = 0; }
         if (input.attack && !this.attacking) {
             this.attacking = true;
             this.attackTimer = ATTACK_DURATION;
@@ -161,6 +164,7 @@ export class Player {
         this.vx = 0; this.vy = 0;
         if (input.up) this.y -= CLIMB_SPEED;
         if (input.down) this.y += CLIMB_SPEED;
+        if (this.y < 0) this.y = 0;
         if (input.left) this.facing = -1;
         if (input.right) this.facing = 1;
         const centerX = this.x + this.w / 2;
@@ -185,6 +189,9 @@ export class Player {
         this.vy = 0;
         if (input.left) { this.x -= ROPE_SPEED; this.facing = -1; }
         if (input.right) { this.x += ROPE_SPEED; this.facing = 1; }
+        const worldW = solidMap[0].length * tileW;
+        if (this.x < 0) this.x = 0;
+        if (this.x + this.w > worldW) this.x = worldW - this.w;
         const centerX = this.x + this.w / 2;
         const col = Math.floor(centerX / tileW);
         const row = Math.floor(this.ropeY / tileH);
