@@ -51,27 +51,21 @@ export class Game {
         this.customMode = false;
         this.pauseSel = 0;
         this.pauseHeld = false;
+        this.optSel = 0;
+        this.optHeld = false;
+        this.masterVol = 0.7;
+        this.sfxVol = 0.8;
+        this.musicVol = 0.6;
     }
 
     _buildMenu() {
-        const items = [];
-        items.push({ type: 'play', label: 'Play Game', action: () => this._startNewGame() });
-                items.push({ type: 'editor', label: 'Level Editor', action: () => { window.location.href = 'editor.html'; } });
-
-        const customs = getCustomLevels();
-        if (customs.length > 0) {
-            items.push({ type: 'header', label: '-- Custom Levels --', action: null });
-            for (const cl of customs) {
-                const cName = cl.name;
-                items.push({
-                    type: 'custom',
-                    label: '\u2605 ' + cName,
-                    action: () => this._startCustomLevel(cName)
-                });
-            }
-        }
-        this.menuItems = items;
-        if (this.menuSel >= items.length) this.menuSel = 0;
+        this.menuItems = [
+            { type: 'play', label: 'Start Game', action: () => this._startNewGame() },
+            { type: 'editor', label: 'Editor', action: () => { window.location.href = 'editor.html'; } },
+            { type: 'options', label: 'Options', action: () => { this.state = 'OPTIONS'; this.optSel = 0; } },
+            { type: 'quit', label: 'Quit Game', action: () => { window.close(); } }
+        ];
+        if (this.menuSel >= this.menuItems.length) this.menuSel = 0;
     }
 
     async start() {
@@ -124,9 +118,19 @@ export class Game {
             case 'MENU':
                 this._updateMenu();
                 break;
+            case 'OPTIONS':
+                this._updateOptions();
+                break;
             case 'PLAYING':
                 if (this.input.escape) { this.state = 'PAUSED'; this.pauseSel = 0; this.pauseHeld = true; break; }
                 this._updatePlay();
+                break;
+            case 'BOSS_INTRO':
+                this.bossIntroTimer--;
+                if (this.bossIntroTimer <= 0 || this.input.enter || this.input.jumpPressed) {
+                    this.bossIntroTimer = 0;
+                    this.state = 'PLAYING';
+                }
                 break;
             case 'PAUSED':
                 this._updatePause();
@@ -200,6 +204,33 @@ export class Game {
         }
     }
 
+    _updateOptions() {
+        const optItems = ['Controls', 'Sound Settings', 'Back'];
+        if (this.optHeld) {
+            if (!this.input.isDown('ArrowUp') && !this.input.isDown('ArrowDown') && !this.input.isDown('KeyW') && !this.input.isDown('KeyS') && !this.input.enter && !this.input.escape) {
+                this.optHeld = false;
+            }
+            return;
+        }
+        const up = this.input.isDown('ArrowUp') || this.input.isDown('KeyW');
+        const down = this.input.isDown('ArrowDown') || this.input.isDown('KeyS');
+        if (up || down) {
+            this.optHeld = true;
+            this.optSel = (this.optSel + (down ? 1 : -1) + optItems.length) % optItems.length;
+        }
+        if (this.input.enter) {
+            this.optHeld = true;
+            if (this.optSel === 0) { /* controls view */ }
+            else if (this.optSel === 1) { /* sound settings view */ }
+            else { this.state = 'MENU'; this._buildMenu(); }
+        }
+        if (this.input.escape) {
+            this.optHeld = true;
+            this.state = 'MENU';
+            this._buildMenu();
+        }
+    }
+
     _startNewGame() {
         this.score = 0;
         this.levelIdx = 0;
@@ -258,6 +289,7 @@ export class Game {
         this.bossDefeated = false;
         this.bossArenaActive = false;
         this.bossArenaLeft = 0;
+        this.bossIntroTimer = 0;
         if (isBossLevel(idx)) {
             const bDef = getBossDef(idx);
             const exitTx = level.exit ? level.exit.tx : level.width - 2;
@@ -272,12 +304,16 @@ export class Game {
             );
         }
 
+        if (this.boss) {
+            this.bossIntroTimer = 120;
+        }
+
         this.hitSet.clear();
         this.hasKey = false;
         this.particles = [];
         this.camX = 0;
         this.camY = 0;
-        this.state = 'PLAYING';
+        this.state = this.boss ? 'BOSS_INTRO' : 'PLAYING';
     }
 
     _advanceLevel() {
@@ -576,12 +612,17 @@ export class Game {
             case 'MENU':
                 this.ui.renderMenu(this.menuSel, this.menuItems);
                 break;
+            case 'OPTIONS':
+                this.ui.renderOptions(this.optSel, this.masterVol, this.sfxVol, this.musicVol);
+                break;
             case 'PLAYING':
             case 'PAUSED':
+            case 'BOSS_INTRO':
                 this._renderWorld();
                 this._renderParticles();
                 this.ui.renderHUD(this.player, this.score, this.level.name, this.levelIdx + 1, getTotalLevels(), this.boss, this.hasKey);
                 if (this.state === 'PAUSED') this.ui.renderPause(this.score, this.level.name, this.pauseSel);
+                if (this.state === 'BOSS_INTRO') this.ui.renderBossIntro(this.boss, this.bossIntroTimer);
                 break;
             case 'LEVEL_COMPLETE':
                 this._renderWorld();
