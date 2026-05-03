@@ -283,6 +283,7 @@ let mgx = -1, mgy = -1;
 let dragging = false, painting = false, panning = false;
 let panX0 = 0, panY0 = 0, camX0 = 0, camY0 = 0;
 let editingName = '';
+let editingLevelNum = null;
 let editMode = 'build';
 
 const SOLID_TILES = new Set([33,52,53,169,170,171,109,110,111,49,50,51,60,80,100,76,78,181,182,183]);
@@ -312,102 +313,6 @@ const ENEMY_DEFS = {
 function mk(w, h) { return Array.from({length: h}, () => new Array(w).fill(0)); }
 function mkBool(w, h) { return Array.from({length: h}, () => new Array(w).fill(false)); }
 
-// === BUILT-IN LEVEL BUILDERS (mirrored from levels.js) ===
-const GS = { tl: 49, tm: 50, tr: 51, fill: [169, 170, 171] };
-const SS = { tl: 109, tm: 110, tr: 111, fill: [109, 110, 111] };
-const WS = { tl: 60, tm: 80, tr: 100, fill: [80] };
-
-function _plat(m, x, y, w, s) {
-  if (x < 0 || y < 0 || w < 1) return;
-  const mw = m[0].length, mh = m.length, ex = Math.min(x + w, mw);
-  m[y][x] = s.tl;
-  for (let i = x + 1; i < ex - 1; i++) m[y][i] = s.tm;
-  if (w > 1) m[y][ex - 1] = s.tr; else m[y][x] = s.tm;
-  for (let r = y + 1; r < mh; r++) { m[r][x] = 169; for (let i = x + 1; i < ex - 1; i++) m[r][i] = 170; if (w > 1) m[r][ex - 1] = 171; else m[r][x] = 170; }
-}
-function _flt(m, x, y, w) { if (w <= 2) { m[y][x] = 76; if (w > 1) m[y][x + 1] = 78; } else { m[y][x] = 181; for (let i = 1; i < w - 1; i++) m[y][x + i] = 182; m[y][x + w - 1] = 183; } }
-function _cn(m, x, y, n) { const ids = [179, 180]; for (let i = 0; i < n; i++) if (m[y]) m[y][x + i] = ids[i % 2]; }
-function _sp(m, x, y, n) { for (let i = 0; i < (n||1); i++) if (m[y]) m[y][x + i] = 96; }
-function _hr(m, x, y) { if (m[y]) m[y][x] = 72; }
-function _ext(m, x, y) { if (m[y]) m[y][x] = 178; }
-function _dco(m, x, y) { if (!m[y]) return; m[y][x] = [154,155,156,157][x % 4]; }
-function _tree(m, x, y) { if (m[y+6]) { m[y][x]=45;m[y+1][x]=46;m[y+2][x]=47;m[y+3][x]=65;m[y+4][x]=66;m[y+5][x]=67;m[y+6][x]=85;m[y+7][x]=86;m[y+8][x]=87; } }
-function _ladder(m, x, y, h) { for (let i = 0; i < h; i++) { const r = y - i; if (r < 0 || !m[r]) continue; m[r][x] = i === 0 ? 79 : 99; } }
-function _rope(m, x, y, len) { if (!m[y]) return; for (let i = 0; i < len; i++) { const c = x + i; if (c >= m[0].length) continue; if (i===0) m[y][c]=118; else if (i===len-1) m[y][c]=120; else m[y][c]=119; } }
-function _spr(m, x, y) { if (m[y]) m[y][x] = 135; }
-
-function buildBuiltin(idx) {
-  const builders = [
-    function() {
-      const W=45,H=10,m=mk(W,H);
-      _plat(m,0,8,12,GS);_plat(m,15,8,8,GS);_plat(m,25,8,6,GS);_plat(m,33,8,12,GS);
-      _sp(m,23,8);_flt(m,5,6,3);_flt(m,11,5,3);_flt(m,17,6,3);_flt(m,21,5,2);_flt(m,27,6,3);_flt(m,31,5,2);_flt(m,35,4,3);_flt(m,39,6,3);
-      _cn(m,6,5,3);_cn(m,12,4,2);_cn(m,18,5,3);_cn(m,28,5,3);_cn(m,36,3,2);
-      _hr(m,31,4);_ladder(m,13,8,2);_spr(m,30,7);
-      _tree(m,1,5);_tree(m,3,4);_dco(m,8,7);_dco(m,16,7);_dco(m,26,7);_ext(m,43,7);
-      return {name:'Green Meadows',w:W,h:H,map:m};
-    },
-    function() {
-      const W=50,H=10,m=mk(W,H);
-      _plat(m,0,8,9,SS);_plat(m,12,8,7,SS);_plat(m,21,8,5,SS);_plat(m,28,8,6,SS);_plat(m,36,8,5,SS);_plat(m,43,8,7,SS);
-      _sp(m,19,8);_sp(m,20,8);_sp(m,34,8);_sp(m,35,8);
-      _flt(m,4,6,3);_flt(m,9,4,3);_flt(m,14,6,3);_flt(m,18,5,2);_flt(m,23,5,3);_flt(m,27,3,3);_flt(m,30,6,2);_flt(m,34,4,2);_flt(m,38,6,3);_flt(m,42,5,3);_flt(m,46,4,2);
-      _cn(m,5,5,3);_cn(m,10,3,2);_cn(m,15,5,3);_cn(m,24,4,3);_cn(m,28,2,2);_cn(m,39,5,3);_cn(m,47,3,2);
-      _hr(m,27,2);_hr(m,42,4);_ladder(m,10,8,3);_rope(m,32,2,5);_spr(m,37,7);
-      _dco(m,2,7);_dco(m,13,7);_dco(m,29,7);_ext(m,48,7);
-      return {name:'Rocky Caves',w:W,h:H,map:m};
-    },
-    function() {
-      const W=55,H=10,m=mk(W,H);
-      _plat(m,0,8,8,WS);_plat(m,11,8,6,WS);_plat(m,19,8,5,WS);_plat(m,26,8,6,WS);_plat(m,34,8,4,WS);_plat(m,40,8,5,WS);_plat(m,47,8,8,WS);
-      _sp(m,9,8);_sp(m,10,8);_sp(m,17,8);_sp(m,18,8);_sp(m,24,8);_sp(m,25,8);_sp(m,32,8);_sp(m,33,8);_sp(m,38,8);_sp(m,39,8);
-      _flt(m,3,6,2);_flt(m,7,4,3);_flt(m,12,6,3);_flt(m,16,5,2);_flt(m,20,6,3);_flt(m,25,4,2);_flt(m,28,6,3);_flt(m,32,5,3);_flt(m,36,6,2);_flt(m,39,3,3);_flt(m,43,5,3);_flt(m,48,6,3);_flt(m,52,4,2);
-      _cn(m,4,5,2);_cn(m,8,3,3);_cn(m,13,5,3);_cn(m,21,5,3);_cn(m,29,5,3);_cn(m,40,2,3);_cn(m,44,4,2);_cn(m,49,5,3);
-      _hr(m,7,3);_hr(m,25,3);_hr(m,39,2);
-      _ladder(m,14,8,3);_ladder(m,30,8,2);_rope(m,21,3,5);_spr(m,37,7);_spr(m,48,7);
-      _tree(m,1,5);_tree(m,4,4);_dco(m,12,7);_dco(m,20,7);_dco(m,27,7);_dco(m,41,7);_dco(m,48,7);_ext(m,53,7);
-      return {name:'Haunted Woods',w:W,h:H,map:m};
-    },
-    function() {
-      const W=60,H=10,m=mk(W,H);
-      _plat(m,0,8,7,SS);_plat(m,10,8,5,SS);_plat(m,17,8,4,SS);_plat(m,23,8,5,SS);_plat(m,30,8,4,SS);_plat(m,36,8,5,SS);_plat(m,43,8,4,SS);_plat(m,49,8,11,SS);
-      _sp(m,7,8);_sp(m,8,8);_sp(m,15,8);_sp(m,16,8);_sp(m,21,8);_sp(m,22,8);_sp(m,28,8);_sp(m,29,8);_sp(m,34,8);_sp(m,35,8);_sp(m,41,8);_sp(m,42,8);_sp(m,47,8);_sp(m,48,8);
-      _flt(m,3,6,3);_flt(m,7,4,2);_flt(m,11,6,3);_flt(m,15,5,2);_flt(m,19,6,3);_flt(m,23,4,2);_flt(m,26,6,3);_flt(m,30,5,3);_flt(m,34,3,2);_flt(m,38,6,3);_flt(m,42,5,2);_flt(m,45,6,3);_flt(m,49,4,3);_flt(m,53,6,3);_flt(m,57,5,2);
-      _cn(m,4,5,3);_cn(m,8,3,2);_cn(m,12,5,3);_cn(m,20,5,3);_cn(m,27,5,3);_cn(m,31,4,3);_cn(m,35,2,2);_cn(m,39,5,3);_cn(m,50,3,3);_cn(m,54,5,3);
-      _hr(m,7,3);_hr(m,23,3);_hr(m,34,2);_hr(m,49,3);
-      _ladder(m,16,8,3);_ladder(m,42,8,2);_rope(m,26,3,5);_rope(m,45,2,4);_spr(m,29,7);_spr(m,53,7);
-      _dco(m,2,7);_dco(m,11,7);_dco(m,19,7);_dco(m,26,7);_dco(m,38,7);_dco(m,45,7);_dco(m,53,7);_ext(m,58,7);
-      return {name:'Dark Caves',w:W,h:H,map:m};
-    },
-    function() {
-      const W=66,H=10,m=mk(W,H);
-      _plat(m,0,8,6,GS);_plat(m,9,8,5,SS);_plat(m,16,8,4,WS);_plat(m,22,8,5,SS);_plat(m,29,8,4,GS);_plat(m,35,8,4,WS);_plat(m,41,8,5,SS);_plat(m,48,8,4,GS);_plat(m,54,8,12,GS);
-      _sp(m,6,8);_sp(m,7,8);_sp(m,14,8);_sp(m,15,8);_sp(m,20,8);_sp(m,21,8);_sp(m,27,8);_sp(m,28,8);_sp(m,33,8);_sp(m,34,8);_sp(m,39,8);_sp(m,40,8);_sp(m,46,8);_sp(m,47,8);_sp(m,52,8);_sp(m,53,8);
-      _flt(m,2,6,2);_flt(m,5,4,3);_flt(m,9,6,3);_flt(m,13,5,2);_flt(m,17,6,2);_flt(m,20,4,3);_flt(m,24,6,3);_flt(m,28,5,2);_flt(m,31,6,2);_flt(m,34,4,2);_flt(m,37,6,3);_flt(m,41,5,3);_flt(m,45,3,2);_flt(m,48,6,3);_flt(m,52,5,2);_flt(m,55,4,3);_flt(m,59,6,3);_flt(m,63,5,2);
-      _cn(m,3,5,2);_cn(m,6,3,3);_cn(m,10,5,3);_cn(m,18,5,2);_cn(m,21,3,3);_cn(m,25,5,3);_cn(m,32,5,2);_cn(m,38,5,3);_cn(m,42,4,3);_cn(m,49,5,3);_cn(m,56,3,3);_cn(m,60,5,3);
-      _hr(m,5,3);_hr(m,20,3);_hr(m,34,3);_hr(m,45,2);_hr(m,55,3);
-      _ladder(m,8,8,3);_ladder(m,28,8,2);_ladder(m,47,8,3);_rope(m,14,3,5);_rope(m,38,2,5);_rope(m,56,3,4);
-      _spr(m,21,7);_spr(m,41,7);_spr(m,59,7);
-      _tree(m,1,5);_dco(m,10,7);_dco(m,17,7);_dco(m,24,7);_dco(m,31,7);_dco(m,38,7);_dco(m,42,7);_dco(m,49,7);_dco(m,56,7);_ext(m,64,7);
-      return {name:'Final Quest',w:W,h:H,map:m};
-    }
-  ];
-  return builders[idx]();
-}
-
-function seedLevels() {
-  const existing = getLevels();
-  let changed = false;
-  for (let i = 0; i < 5; i++) {
-    const lvl = buildBuiltin(i);
-    if (existing.find(l => l.name === lvl.name)) continue;
-    const sm = lvl.map.map(row => row.map(id => SOLID_TILES.has(id)));
-    existing.push({ name: lvl.name, w: lvl.w, h: lvl.h, map: lvl.map, solidMap: sm, paintMap: mkBool(lvl.w, lvl.h), builtin: true, created: 0 });
-    changed = true;
-  }
-  if (changed) saveLevels(existing);
-}
-
 const hist = {
   s: [], p: -1,
   snap() { this.s = this.s.slice(0, this.p + 1); this.s.push({ m: map.map(r=>r.slice()), sm: solidMap.map(r=>r.slice()), pm: paintMap.map(r=>r.slice()), e: entities.map(en => ({...en})), ap: { start: actionPoints.start ? {...actionPoints.start} : null, end: actionPoints.end ? {...actionPoints.end} : null } }); this.p = this.s.length - 1; if (this.s.length > 80) { this.s.shift(); this.p--; } },
@@ -419,51 +324,54 @@ const hist = {
 function loadImg(src) { return new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(src); i.src = src; }); }
 
 // === LEVEL PICKER ===
-function getLevels() {
-  try { const r = localStorage.getItem('pqCustomLevels'); return r ? JSON.parse(r) : []; } catch(e) { return []; }
+let folderLevels = [];
+
+async function loadFolderLevels() {
+  folderLevels = [];
+  for (let i = 1; i <= 30; i++) {
+    try {
+      const resp = await fetch('js/levels/level-' + i + '.js?t=' + Date.now());
+      if (!resp.ok) continue;
+      const src = await resp.text();
+      const mod = await import('data:text/javascript;base64,' + btoa(src));
+      if (mod && mod.default && mod.default.name && mod.default.map) {
+        folderLevels.push({ num: i, data: mod.default });
+      }
+    } catch (e) {}
+  }
 }
-function saveLevels(levels) { localStorage.setItem('pqCustomLevels', JSON.stringify(levels)); }
 
 function buildPicker() {
-  seedLevels();
   const list = document.getElementById('picker-list');
   list.innerHTML = '';
-  const levels = getLevels();
 
-  // New level
   const newRow = document.createElement('div');
   newRow.className = 'pick-row pick-new';
   newRow.innerHTML = '<span class="pick-icon">+</span><span class="pick-name">New Empty Level</span><span class="pick-size"></span>';
-  newRow.onclick = () => startEditor('My Level', 45, 10, mk(45, 10), [], mkBool(45, 10), mkBool(45, 10));
+  newRow.onclick = () => startEditor('My Level', 45, 10, mk(45, 10), [], mkBool(45, 10), mkBool(45, 10), null, null);
   list.appendChild(newRow);
 
-  // Existing levels
-  for (const l of levels) {
+  for (const fl of folderLevels) {
+    const l = fl.data;
     const row = document.createElement('div');
     row.className = 'pick-row';
-    const icon = l.builtin ? '\u25C6' : '\u2605';
-    let useL = l;
-    if (BUILTIN_NAMES.includes(l.name)) {
-      try {
-        const saved = JSON.parse(localStorage.getItem('pq_level_' + l.name));
-        if (saved) useL = saved;
-      } catch(e) {}
-    }
-    const tileCount = useL.map ? useL.map.flat().filter(t => t > 0).length : 0;
-    const entCount = useL.entities ? useL.entities.length : 0;
-    row.innerHTML = `<span class="pick-icon">${icon}</span><span class="pick-name" style="color:${l.builtin ? '#8be9fd' : '#ffd700'}">${l.name}</span><span class="pick-size">${useL.w}x${useL.h} | ${tileCount} tiles${entCount ? ' | ' + entCount + ' enemies' : ''}</span>`;
-    const mapData = useL.map ? useL.map.map(r => (Array.isArray(r) && r.slice) ? r.slice() : new Array(useL.w || 45).fill(0)) : mk(useL.w || 45, useL.h || 10);
-    const solidData = useL.solidMap ? useL.solidMap.map(r => (Array.isArray(r) && r.slice) ? r.slice() : new Array(useL.w || 45).fill(false)) : mapData.map(r => r.map(id => SOLID_TILES.has(id)));
-    const paintData = useL.paintMap ? useL.paintMap.map(r => (Array.isArray(r) && r.slice) ? r.slice() : new Array(useL.w || 45).fill(false)) : mkBool(useL.w || 45, useL.h || 10);
-    const entData = Array.isArray(useL.entities) ? useL.entities.filter(e => ENEMY_DEFS[e.type]).map(e => ({...e})) : [];
-    const apData = useL.actionPoints || { start: null, end: null };
-    row.onclick = () => startEditor(l.name, useL.w, useL.h, mapData, entData, solidData, paintData, apData);
+    const icon = fl.num <= 10 ? '\u25C6' : '\u2605';
+    const tileCount = l.map ? l.map.flat().filter(t => t > 0).length : 0;
+    const entCount = l.entities ? l.entities.length : 0;
+    row.innerHTML = `<span class="pick-icon">${icon}</span><span class="pick-name" style="color:${fl.num <= 10 ? '#8be9fd' : '#ffd700'}">${l.name}</span><span class="pick-size">${l.w}x${l.h} | ${tileCount} tiles${entCount ? ' | ' + entCount + ' enemies' : ''}</span>`;
+    const mapData = l.map.map(r => r.slice());
+    const solidData = l.solidMap ? l.solidMap.map(r => r.slice()) : mapData.map(r => r.map(id => SOLID_TILES.has(id)));
+    const paintData = mkBool(l.w, l.h);
+    const entData = (l.entities || []).filter(e => ENEMY_DEFS[e.type]).map(e => ({...e}));
+    const apData = { start: l.spawn ? {...l.spawn} : null, end: l.exit ? {...l.exit} : null };
+    row.onclick = () => startEditor(l.name, l.w, l.h, mapData, entData, solidData, paintData, apData, fl.num);
     list.appendChild(row);
   }
 }
 
-function startEditor(name, w, h, mapData, entData, sData, pData, apData) {
+function startEditor(name, w, h, mapData, entData, sData, pData, apData, levelNum) {
   editingName = name;
+  editingLevelNum = levelNum || null;
   levelW = w; levelH = h;
   map = mapData;
   solidMap = sData || mkBool(w, h);
@@ -497,7 +405,7 @@ function startEditor(name, w, h, mapData, entData, sData, pData, apData) {
 function showPicker() {
   document.getElementById('editor').classList.remove('active');
   document.getElementById('picker').classList.add('active');
-  buildPicker();
+  loadFolderLevels().then(() => buildPicker());
 }
 
 // === CANVAS ===
@@ -823,18 +731,6 @@ function drawBG(cx0, cy0) {
 }
 
 // === SAVE/LOAD ===
-function saveCurrentLevel() {
-  const entry = { name: editingName, w: levelW, h: levelH, map, solidMap, paintMap, entities: entities.map(e => ({...e})), actionPoints: { start: actionPoints.start ? {...actionPoints.start} : null, end: actionPoints.end ? {...actionPoints.end} : null }, created: Date.now() };
-  localStorage.setItem('pq_level_' + editingName, JSON.stringify(entry));
-  const levels = getLevels();
-  const idx = levels.findIndex(l => l.name === editingName);
-  if (idx >= 0) { if (levels[idx].builtin) entry.builtin = true; levels[idx] = entry; }
-  else levels.push(entry);
-  saveLevels(levels);
-  _syncCustomLevels();
-  toast('Saved "' + editingName + '"!');
-}
-
 const BUILTIN_NAMES = ['Green Meadows', 'Rocky Caves', 'Haunted Woods', 'Dark Caves', 'Final Quest', 'Sunlit Hills', 'Crumbling Bridge', 'Flooded Depths', 'Tower Ascent', 'Dark Throne'];
 const BUILTIN_COUNT = BUILTIN_NAMES.length;
 
@@ -842,7 +738,6 @@ function _levelToJS(l) {
   const m = l.map || [];
   const sm = l.solidMap || m.map(r => r.map(id => SOLID_TILES.has(id)));
   const ent = l.entities || [];
-  const ap = l.actionPoints || {};
   const lines = [];
   lines.push('{');
   lines.push('  name: ' + JSON.stringify(l.name) + ',');
@@ -850,8 +745,8 @@ function _levelToJS(l) {
   lines.push('  h: ' + l.h + ',');
   lines.push('  bgColor: ' + JSON.stringify(l.bgColor || '#1a2a1a') + ',');
   lines.push('  theme: ' + JSON.stringify(l.theme || 'grass') + ',');
-  lines.push('  spawn: ' + JSON.stringify(ap.start || { tx: 1, ty: (l.h || 10) - 2 }) + ',');
-  lines.push('  exit: ' + JSON.stringify(ap.end || { tx: (l.w || 45) - 2, ty: (l.h || 10) - 2 }) + ',');
+  lines.push('  spawn: ' + JSON.stringify(l.spawn || { tx: 1, ty: (l.h || 10) - 2 }) + ',');
+  lines.push('  exit: ' + JSON.stringify(l.exit || { tx: (l.w || 45) - 2, ty: (l.h || 10) - 2 }) + ',');
   lines.push('  map: [');
   for (const row of m) lines.push('    [' + row.join(',') + '],');
   lines.push('  ],');
@@ -863,81 +758,79 @@ function _levelToJS(l) {
   return lines.join('\n');
 }
 
-function _getLevelNum(name) {
-  const idx = BUILTIN_NAMES.indexOf(name);
-  if (idx >= 0) return idx + 1;
-  const levels = getLevels();
-  const customIdx = levels.findIndex(l => l.name === name && !BUILTIN_NAMES.includes(name));
-  return customIdx >= 0 ? BUILTIN_COUNT + customIdx + 1 : null;
+let levelsDirHandle = null;
+
+async function _ensureLevelsDir() {
+  if (levelsDirHandle) {
+    try { await levelsDirHandle.queryPermission({ mode: 'readwrite' }); return true; } catch(e) {}
+    try { const granted = await levelsDirHandle.requestPermission({ mode: 'readwrite' }); if (granted === 'granted') return true; } catch(e) {}
+    levelsDirHandle = null;
+  }
+  try {
+    levelsDirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    return true;
+  } catch(e) { return false; }
 }
 
 function saveCurrentLevel() {
-  const entry = { name: editingName, w: levelW, h: levelH, map, solidMap, paintMap, entities: entities.map(e => ({...e})), actionPoints: { start: actionPoints.start ? {...actionPoints.start} : null, end: actionPoints.end ? {...actionPoints.end} : null }, created: Date.now() };
-  localStorage.setItem('pq_level_' + editingName, JSON.stringify(entry));
-  const levels = getLevels();
-  const idx = levels.findIndex(l => l.name === editingName);
-  if (idx >= 0) { if (levels[idx].builtin) entry.builtin = true; levels[idx] = entry; }
-  else levels.push(entry);
-  saveLevels(levels);
-  const num = _getLevelNum(editingName);
-  if (num !== null) exportLevelFile(num, entry);
-  toast('Saved "' + editingName + '"!');
+  const entry = {
+    name: editingName, w: levelW, h: levelH,
+    bgColor: document.getElementById('inp-bg') ? document.getElementById('inp-bg').value : '#1a2a1a',
+    theme: 'grass',
+    spawn: actionPoints.start || { tx: 1, ty: levelH - 2 },
+    exit: actionPoints.end || { tx: levelW - 2, ty: levelH - 2 },
+    map, solidMap, entities: entities.map(e => ({...e}))
+  };
+  if (editingLevelNum) {
+    _saveLevelFile(editingLevelNum, entry);
+  } else {
+    const num = BUILTIN_COUNT + folderLevels.length + 1;
+    _saveLevelFile(num, entry);
+    editingLevelNum = num;
+  }
 }
 
-function exportLevelFile(num, data) {
+function _buildLevelJS(num, data) {
   const lines = [];
   lines.push('// Level ' + num + ': ' + (data.name || 'Untitled'));
-  lines.push('// Place in js/levels/ folder to override the default');
   lines.push('');
   lines.push('export default ' + _levelToJS(data) + ';');
   lines.push('');
-  const content = lines.join('\n');
-  const blob = new Blob([content], { type: 'application/javascript' });
+  return lines.join('\n');
+}
+
+async function _saveLevelFile(num, data) {
+  const content = _buildLevelJS(num, data);
+  const fname = 'level-' + num + '.js';
+  const hasDir = await _ensureLevelsDir();
+  if (!hasDir) {
+    toast('Folder access denied — downloading instead');
+    _downloadLevelFile(num, data);
+    return;
+  }
+  try {
+    const fh = await levelsDirHandle.getFileHandle(fname, { create: true });
+    const writable = await fh.createWritable();
+    await writable.write(content);
+    await writable.close();
+    toast('Saved "' + data.name + '" (' + fname + ')');
+  } catch(e) {
+    toast('Write failed — downloading instead');
+    _downloadLevelFile(num, data);
+  }
+}
+
+function _downloadLevelFile(num, data) {
+  const lines = [];
+  lines.push('// Level ' + num + ': ' + (data.name || 'Untitled'));
+  lines.push('// Place in js/levels/ folder');
+  lines.push('');
+  lines.push('export default ' + _levelToJS(data) + ';');
+  lines.push('');
+  const blob = new Blob([lines.join('\n')], { type: 'application/javascript' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'level-' + num + '.js';
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
-function _syncCustomLevels() {
-  const levels = getLevels();
-  const custom = levels.filter(l => !BUILTIN_NAMES.includes(l.name));
-  localStorage.setItem('pq_custom_levels', JSON.stringify(custom));
-}
-
-let _autoExportTimer = null;
-
-function exportAsJS() {
-  const levels = getLevels();
-  const editedLines = [];
-  const customLines = [];
-
-  for (const l of levels) {
-    if (BUILTIN_NAMES.includes(l.name)) {
-      editedLines.push('  "' + l.name + '": ' + _levelToJS(l, 2) + ',');
-    } else {
-      customLines.push(_levelToJS(l, 2) + ',');
-    }
-  }
-
-  const lines = [];
-  lines.push('// Auto-generated by Pixely Block Level Editor');
-  lines.push('// Place this file in js/ folder - overrides built-in levels by name');
-  lines.push('');
-  lines.push('export const editedLevels = {');
-  lines.push(...editedLines);
-  lines.push('};');
-  lines.push('');
-  lines.push('export const customLevels = [');
-  lines.push(...customLines);
-  lines.push('];');
-
-  const content = lines.join('\n') + '\n';
-  const blob = new Blob([content], { type: 'application/javascript' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'custom-levels.js';
   a.click();
   URL.revokeObjectURL(a.href);
 }
@@ -1010,12 +903,11 @@ function setupUI() {
 // === INIT ===
 async function init() {
   try { [tileImg, bgImg, charImg] = await Promise.all([loadImg(TILE_URL), loadImg(BG_URL), loadImg(CHAR_URL)]); }
-  catch(e) { document.getElementById('loading').textContent = 'Failed to load assets. Run: npx http-server'; return; }
+  catch(e) { document.getElementById('loading').textContent = 'Failed to load assets. Run: node server.js'; return; }
   document.getElementById('loading').style.display = 'none';
   buildPalette();
   setupUI();
-  buildPicker();
-  requestAnimationFrame(render);
+  loadFolderLevels().then(() => buildPicker());  requestAnimationFrame(render);
 }
 
 init();
