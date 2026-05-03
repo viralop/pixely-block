@@ -5,7 +5,7 @@ import { UI, INTRO_LINES } from './ui.js';
 import { Player } from './player.js';
 import { Enemy } from './enemy.js';
 import { Boss, getBossDef, isBossLevel } from './boss.js';
-import { getLevel, getTotalLevels, getCustomLevels, getCustomLevel, seedBuiltInLevels } from './levels.js';
+import { getLevel, getTotalLevels, loadCustomLevels } from './levels.js';
 import { rectOverlap, HAZARD_IDS, COIN_IDS, HEART_IDS, EXIT_IDS, SPRING_IDS, CHECKPOINT_IDS, KEY_IDS, LOCK_IDS, getTilesInRegion, getTileAt, isSolid } from './collision.js';
 
 const FIXED_DT = 1000 / 60;
@@ -72,6 +72,7 @@ export class Game {
         this.ui.renderLoading();
         try {
             await Sprites.loadAll();
+            await loadCustomLevels();
         } catch (e) {
             const ctx = this.ctx;
             ctx.fillStyle = '#f00';
@@ -86,7 +87,6 @@ export class Game {
             return;
         }
         this.state = 'MENU';
-        seedBuiltInLevels();
         this._buildMenu();
         this._loop = this._loop.bind(this);
         requestAnimationFrame(this._loop);
@@ -242,28 +242,6 @@ export class Game {
 
     _startAfterIntro() {
         this._loadLevel(0);
-    }
-
-    _startCustomLevel(name) {
-        const level = getCustomLevel(name);
-        if (!level) return;
-        this.score = 0;
-        this.customMode = true;
-        this.level = level;
-        this.level.name = name;
-        this.level.index = 0;
-        this.level.totalLevels = 1;
-        this.triggeredSprings = new Map();
-        this.activatedCheckpoints = new Set();
-        const sx = level.spawn.tx * Sprites.RENDER_TILE;
-        const sy = level.spawn.ty * Sprites.RENDER_TILE;
-        this.player = new Player(sx, sy);
-        this.enemies = [];
-        this.hitSet.clear();
-        this.particles = [];
-        this.camX = 0;
-        this.camY = 0;
-        this.state = 'PLAYING';
     }
 
     _loadLevel(idx) {

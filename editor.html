@@ -201,7 +201,7 @@
     <h3>File</h3>
     <div class="btn-row">
       <button class="btn green" id="btn-save">Save</button>
-      <button class="btn green" id="btn-export">Export JSON</button>
+      <button class="btn blue" id="btn-export">Export JSON</button>
       <button class="btn blue" id="btn-import">Import JSON</button>
     </div>
 
@@ -442,15 +442,22 @@ function buildPicker() {
     const row = document.createElement('div');
     row.className = 'pick-row';
     const icon = l.builtin ? '\u25C6' : '\u2605';
-    const tileCount = l.map ? l.map.flat().filter(t => t > 0).length : 0;
-    const entCount = l.entities ? l.entities.length : 0;
-    row.innerHTML = `<span class="pick-icon">${icon}</span><span class="pick-name" style="color:${l.builtin ? '#8be9fd' : '#ffd700'}">${l.name}</span><span class="pick-size">${l.w}x${l.h} | ${tileCount} tiles${entCount ? ' | ' + entCount + ' enemies' : ''}</span>`;
-    const mapData = l.map ? l.map.map(r => (Array.isArray(r) && r.slice) ? r.slice() : new Array(l.w || 45).fill(0)) : mk(l.w || 45, l.h || 10);
-    const solidData = l.solidMap ? l.solidMap.map(r => (Array.isArray(r) && r.slice) ? r.slice() : new Array(l.w || 45).fill(false)) : mapData.map(r => r.map(id => SOLID_TILES.has(id)));
-    const paintData = l.paintMap ? l.paintMap.map(r => (Array.isArray(r) && r.slice) ? r.slice() : new Array(l.w || 45).fill(false)) : mkBool(l.w || 45, l.h || 10);
-    const entData = Array.isArray(l.entities) ? l.entities.filter(e => ENEMY_DEFS[e.type]).map(e => ({...e})) : [];
-    const apData = l.actionPoints || { start: null, end: null };
-    row.onclick = () => startEditor(l.name, l.w, l.h, mapData, entData, solidData, paintData, apData);
+    let useL = l;
+    if (BUILTIN_NAMES.includes(l.name)) {
+      try {
+        const saved = JSON.parse(localStorage.getItem('pq_level_' + l.name));
+        if (saved) useL = saved;
+      } catch(e) {}
+    }
+    const tileCount = useL.map ? useL.map.flat().filter(t => t > 0).length : 0;
+    const entCount = useL.entities ? useL.entities.length : 0;
+    row.innerHTML = `<span class="pick-icon">${icon}</span><span class="pick-name" style="color:${l.builtin ? '#8be9fd' : '#ffd700'}">${l.name}</span><span class="pick-size">${useL.w}x${useL.h} | ${tileCount} tiles${entCount ? ' | ' + entCount + ' enemies' : ''}</span>`;
+    const mapData = useL.map ? useL.map.map(r => (Array.isArray(r) && r.slice) ? r.slice() : new Array(useL.w || 45).fill(0)) : mk(useL.w || 45, useL.h || 10);
+    const solidData = useL.solidMap ? useL.solidMap.map(r => (Array.isArray(r) && r.slice) ? r.slice() : new Array(useL.w || 45).fill(false)) : mapData.map(r => r.map(id => SOLID_TILES.has(id)));
+    const paintData = useL.paintMap ? useL.paintMap.map(r => (Array.isArray(r) && r.slice) ? r.slice() : new Array(useL.w || 45).fill(false)) : mkBool(useL.w || 45, useL.h || 10);
+    const entData = Array.isArray(useL.entities) ? useL.entities.filter(e => ENEMY_DEFS[e.type]).map(e => ({...e})) : [];
+    const apData = useL.actionPoints || { start: null, end: null };
+    row.onclick = () => startEditor(l.name, useL.w, useL.h, mapData, entData, solidData, paintData, apData);
     list.appendChild(row);
   }
 }
@@ -817,13 +824,122 @@ function drawBG(cx0, cy0) {
 
 // === SAVE/LOAD ===
 function saveCurrentLevel() {
+  const entry = { name: editingName, w: levelW, h: levelH, map, solidMap, paintMap, entities: entities.map(e => ({...e})), actionPoints: { start: actionPoints.start ? {...actionPoints.start} : null, end: actionPoints.end ? {...actionPoints.end} : null }, created: Date.now() };
+  localStorage.setItem('pq_level_' + editingName, JSON.stringify(entry));
   const levels = getLevels();
   const idx = levels.findIndex(l => l.name === editingName);
-  const entry = { name: editingName, w: levelW, h: levelH, map, solidMap, paintMap, entities: entities.map(e => ({...e})), actionPoints: { start: actionPoints.start ? {...actionPoints.start} : null, end: actionPoints.end ? {...actionPoints.end} : null }, created: Date.now() };
   if (idx >= 0) { if (levels[idx].builtin) entry.builtin = true; levels[idx] = entry; }
   else levels.push(entry);
   saveLevels(levels);
+  _syncCustomLevels();
   toast('Saved "' + editingName + '"!');
+}
+
+const BUILTIN_NAMES = ['Green Meadows', 'Rocky Caves', 'Haunted Woods', 'Dark Caves', 'Final Quest', 'Sunlit Hills', 'Crumbling Bridge', 'Flooded Depths', 'Tower Ascent', 'Dark Throne'];
+const BUILTIN_COUNT = BUILTIN_NAMES.length;
+
+function _levelToJS(l) {
+  const m = l.map || [];
+  const sm = l.solidMap || m.map(r => r.map(id => SOLID_TILES.has(id)));
+  const ent = l.entities || [];
+  const ap = l.actionPoints || {};
+  const lines = [];
+  lines.push('{');
+  lines.push('  name: ' + JSON.stringify(l.name) + ',');
+  lines.push('  w: ' + l.w + ',');
+  lines.push('  h: ' + l.h + ',');
+  lines.push('  bgColor: ' + JSON.stringify(l.bgColor || '#1a2a1a') + ',');
+  lines.push('  theme: ' + JSON.stringify(l.theme || 'grass') + ',');
+  lines.push('  spawn: ' + JSON.stringify(ap.start || { tx: 1, ty: (l.h || 10) - 2 }) + ',');
+  lines.push('  exit: ' + JSON.stringify(ap.end || { tx: (l.w || 45) - 2, ty: (l.h || 10) - 2 }) + ',');
+  lines.push('  map: [');
+  for (const row of m) lines.push('    [' + row.join(',') + '],');
+  lines.push('  ],');
+  lines.push('  solidMap: [');
+  for (const row of sm) lines.push('    [' + row.map(v => v ? 'true' : 'false').join(',') + '],');
+  lines.push('  ],');
+  lines.push('  entities: ' + JSON.stringify(ent, null, 2).split('\n').map(ln => '  ' + ln).join('\n') + ',');
+  lines.push('}');
+  return lines.join('\n');
+}
+
+function _getLevelNum(name) {
+  const idx = BUILTIN_NAMES.indexOf(name);
+  if (idx >= 0) return idx + 1;
+  const levels = getLevels();
+  const customIdx = levels.findIndex(l => l.name === name && !BUILTIN_NAMES.includes(name));
+  return customIdx >= 0 ? BUILTIN_COUNT + customIdx + 1 : null;
+}
+
+function saveCurrentLevel() {
+  const entry = { name: editingName, w: levelW, h: levelH, map, solidMap, paintMap, entities: entities.map(e => ({...e})), actionPoints: { start: actionPoints.start ? {...actionPoints.start} : null, end: actionPoints.end ? {...actionPoints.end} : null }, created: Date.now() };
+  localStorage.setItem('pq_level_' + editingName, JSON.stringify(entry));
+  const levels = getLevels();
+  const idx = levels.findIndex(l => l.name === editingName);
+  if (idx >= 0) { if (levels[idx].builtin) entry.builtin = true; levels[idx] = entry; }
+  else levels.push(entry);
+  saveLevels(levels);
+  const num = _getLevelNum(editingName);
+  if (num !== null) exportLevelFile(num, entry);
+  toast('Saved "' + editingName + '"!');
+}
+
+function exportLevelFile(num, data) {
+  const lines = [];
+  lines.push('// Level ' + num + ': ' + (data.name || 'Untitled'));
+  lines.push('// Place in js/levels/ folder to override the default');
+  lines.push('');
+  lines.push('export default ' + _levelToJS(data) + ';');
+  lines.push('');
+  const content = lines.join('\n');
+  const blob = new Blob([content], { type: 'application/javascript' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'level-' + num + '.js';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function _syncCustomLevels() {
+  const levels = getLevels();
+  const custom = levels.filter(l => !BUILTIN_NAMES.includes(l.name));
+  localStorage.setItem('pq_custom_levels', JSON.stringify(custom));
+}
+
+let _autoExportTimer = null;
+
+function exportAsJS() {
+  const levels = getLevels();
+  const editedLines = [];
+  const customLines = [];
+
+  for (const l of levels) {
+    if (BUILTIN_NAMES.includes(l.name)) {
+      editedLines.push('  "' + l.name + '": ' + _levelToJS(l, 2) + ',');
+    } else {
+      customLines.push(_levelToJS(l, 2) + ',');
+    }
+  }
+
+  const lines = [];
+  lines.push('// Auto-generated by Pixely Block Level Editor');
+  lines.push('// Place this file in js/ folder - overrides built-in levels by name');
+  lines.push('');
+  lines.push('export const editedLevels = {');
+  lines.push(...editedLines);
+  lines.push('};');
+  lines.push('');
+  lines.push('export const customLevels = [');
+  lines.push(...customLines);
+  lines.push('];');
+
+  const content = lines.join('\n') + '\n';
+  const blob = new Blob([content], { type: 'application/javascript' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'custom-levels.js';
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 function toast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 2000); }
