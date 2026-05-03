@@ -227,6 +227,37 @@ export class Player {
     getCenterX() { return this.x + this.w / 2; }
     getCenterY() { return this.y + this.h / 2; }
 
+    _getSwingAngle() {
+        const t = 1 - this.attackTimer / ATTACK_DURATION;
+        const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        if (this.facing > 0) {
+            return (-Math.PI / 3) + (Math.PI / 2) * eased;
+        } else {
+            return (Math.PI + Math.PI / 3) - (Math.PI / 2) * eased;
+        }
+    }
+
+    _renderWeapon(ctx, drawX, drawY, sz) {
+        const handX = this.facing > 0
+            ? drawX + sz * 0.85
+            : drawX + sz * 0.15;
+        const handY = drawY + sz * 0.4;
+        const angle = this._getSwingAngle();
+
+        ctx.save();
+        ctx.translate(handX, handY);
+        ctx.rotate(angle);
+
+        const weaponKey = hasExtra('sword') ? 'sword'
+            : (this.attackTimer % 6 < 3) ? 'knight_atk1' : 'knight_atk2';
+        const sx = -sz * 0.15;
+        const sy = -sz;
+        ctx.translate(sx + sz / 2, sy + sz / 2);
+        ctx.scale(-1, 1);
+        drawExtra(ctx, weaponKey, -sz / 2, -sz / 2, sz, false);
+        ctx.restore();
+    }
+
     render(ctx, camX, camY, drawCharFn) {
         if (this.dead) return;
         if (this.iframes > 0 && Math.floor(this.iframes / 3) % 2 === 0) return;
@@ -243,20 +274,7 @@ export class Player {
             else if (Math.abs(this.vx) > 0.5) key = this.animFrame % 2 === 0 ? 'knight_run' : 'knight_idle';
             drawExtra(ctx, key, drawX, drawY, sz, flip);
             if (isAttacking) {
-                const swordOff = this.facing > 0 ? RENDER_CHAR * 0.6 : -RENDER_CHAR * 0.6;
-                const swingAngle = Math.sin((this.attackTimer / 16) * Math.PI) * 1.4;
-                ctx.save();
-                const pivotX = drawX + sz * 0.8;
-                const pivotY = drawY + sz * 0.35;
-                ctx.translate(pivotX, pivotY);
-                ctx.rotate(-swingAngle);
-                if (hasExtra('sword')) {
-                    drawExtra(ctx, 'sword', -sz * 0.1, -sz * 0.3, sz, flip);
-                } else {
-                    const atkKey = (this.attackTimer % 6 < 3) ? 'knight_atk1' : 'knight_atk2';
-                    drawExtra(ctx, atkKey, -sz * 0.1, -sz * 0.3, sz, flip);
-                }
-                ctx.restore();
+                this._renderWeapon(ctx, drawX, drawY, sz);
             }
         } else {
             let charId;
@@ -267,12 +285,7 @@ export class Player {
             else charId = CHAR_IDS.idle;
             drawCharFn(ctx, charId, drawX, drawY, flip);
             if (isAttacking) {
-                const swordOff = this.facing > 0 ? RENDER_CHAR * 0.6 : -RENDER_CHAR * 0.6;
-                if (hasExtra('sword')) {
-                    drawExtra(ctx, 'sword', drawX + swordOff, drawY, sz, flip);
-                } else {
-                    drawCharFn(ctx, CHAR_IDS.attack, drawX + swordOff, drawY, flip);
-                }
+                this._renderWeapon(ctx, drawX, drawY, sz);
             }
         }
     }

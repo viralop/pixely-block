@@ -157,7 +157,6 @@ export class Boss {
                 ctx.translate(asx, asy);
                 ctx.rotate(a.rotation);
                 ctx.imageSmoothingEnabled = false;
-                const img = document.createElement ? null : null;
                 drawExtra(ctx, 'axe', -18, -18, 36, false);
                 ctx.restore();
             }
