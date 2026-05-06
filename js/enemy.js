@@ -5,7 +5,7 @@ const GRAVITY = 0.45;
 const ENEMY_TYPES = {
     slime: {
         hp: 2, speed: 1.2, chaseSpeed: 2.2, chaseRange: 180, score: 50,
-        animGroups: [[10, 11]], width: 0.55, height: 0.55, groundOnly: true
+        animGroups: [[1, 2, 3, 4, 5]], width: 0.55, height: 0.55, groundOnly: true
     },
     bat: {
         hp: 1, speed: 1.5, chaseSpeed: 2.8, chaseRange: 220, score: 75,

@@ -31,7 +31,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  let urlPath = req.url.split('?')[0];
+  let urlPath = decodeURIComponent(req.url.split('?')[0]);
   if (urlPath === '/') urlPath = '/index.html';
   const fpath = path.join(__dirname, urlPath);
 

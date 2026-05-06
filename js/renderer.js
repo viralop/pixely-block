@@ -49,16 +49,26 @@ function loadExtraSprites() {
     };
     const promises = [];
     for (const [key, path] of Object.entries(paths)) {
-        promises.push(loadImage(path).then(img => { extraSprites[key] = img; }).catch(() => {}));
+        promises.push(loadImage(path).then(img => { extraSprites[key] = img; console.log('Loaded extra: ' + key); }).catch(e => { console.warn('Failed to load extra: ' + key, path); }));
     }
     return Promise.all(promises);
 }
 
-export function drawExtra(ctx, key, screenX, screenY, size, flipH = false) {
+export function drawExtra(ctx, key, screenX, screenY, size, flipH = false, srcRect = null) {
     const img = extraSprites[key];
     if (!img) return;
     ctx.imageSmoothingEnabled = false;
-    if (flipH) {
+    if (srcRect) {
+        if (flipH) {
+            ctx.save();
+            ctx.translate(Math.round(screenX) + size, Math.round(screenY));
+            ctx.scale(-1, 1);
+            ctx.drawImage(img, srcRect.x, srcRect.y, srcRect.w, srcRect.h, 0, 0, size, size);
+            ctx.restore();
+        } else {
+            ctx.drawImage(img, srcRect.x, srcRect.y, srcRect.w, srcRect.h, Math.round(screenX), Math.round(screenY), size, size);
+        }
+    } else if (flipH) {
         ctx.save();
         ctx.translate(Math.round(screenX) + size, Math.round(screenY));
         ctx.scale(-1, 1);
