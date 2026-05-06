@@ -2,12 +2,12 @@ import { RENDER_CHAR, RENDER_TILE, SCALE, CHAR_SIZE, drawExtra, hasExtra } from 
 import { moveEntity, isSolid, isLadder, isRope, getTileAt, HAZARD_IDS, COIN_IDS, HEART_IDS, getTilesInRegion, rectOverlap } from './collision.js';
 
 const GRAVITY = 0.48;
-const JUMP_FORCE = -12.5;
+const JUMP_FORCE = -14;
 const MOVE_ACCEL = 0.7;
 const MOVE_DECEL = 0.35;
 const MAX_SPEED = 4.5;
 const ATTACK_DURATION = 16;
-const ATTACK_RANGE = 45;
+const ATTACK_RANGE = 65;
 const IFRAME_DURATION = 45;
 const KNOCKBACK_X = 6;
 const KNOCKBACK_Y = -6;
@@ -220,7 +220,7 @@ export class Player {
     }
 
     getAttackBox() {
-        if (!this.attacking || this.attackTimer < ATTACK_DURATION - 8) return null;
+        if (!this.attacking || this.attackTimer < ATTACK_DURATION - 14) return null;
         return { x: this.facing > 0 ? this.x + this.w : this.x - ATTACK_RANGE, y: this.y + 10, w: ATTACK_RANGE, h: this.h - 20 };
     }
 

@@ -148,7 +148,6 @@ export class Game {
                 if (this.input.enter) this._advanceLevel();
                 break;
         }
-        this.input.update();
     }
 
     _updateMenu() {
@@ -183,7 +182,6 @@ export class Game {
                 count++;
             }
         }
-        return 0;
     }
 
     _updatePause() {
