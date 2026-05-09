@@ -1,5 +1,5 @@
 import { RENDER_CHAR, RENDER_TILE, SCALE, CHAR_SIZE, drawExtra, hasExtra } from './renderer.js';
-import { moveEntity, isSolid, isLadder, isRope, getTileAt, HAZARD_IDS, COIN_IDS, HEART_IDS, getTilesInRegion, rectOverlap } from './collision.js';
+import { moveEntity, isSolid, isLadder, isRope, isHook, getTileAt, HAZARD_IDS, COIN_IDS, HEART_IDS, getTilesInRegion, rectOverlap } from './collision.js';
 
 const GRAVITY = 0.48;
 const JUMP_FORCE = -14;
@@ -61,6 +61,7 @@ export class Player {
         this.climbing = false;
         this.onRope = false;
         this.ropeY = 0;
+        this.hookCooldown = 0;
     }
 
     update(input, solidMap, tileW, tileH, customSolidMap) {
@@ -135,14 +136,24 @@ export class Player {
     }
 
     _checkGrabRope(input, solidMap, tileW, tileH) {
-        if (!input.up) return;
-        if (this.vy >= 0) return;
+        if (this.hookCooldown > 0) {
+            this.hookCooldown--;
+            return;
+        }
         const centerX = this.x + this.w / 2;
         const col = Math.floor(centerX / tileW);
         const topRow = Math.floor(this.y / tileH);
         const botRow = Math.floor((this.y + this.h - 1) / tileH);
         for (let row = topRow; row <= botRow; row++) {
-            if (isRope(getTileAt(solidMap, col, row))) {
+            const tile = getTileAt(solidMap, col, row);
+            if (isHook(tile)) {
+                this.onRope = true;
+                this.vx = 0; this.vy = 0;
+                this.ropeY = row * tileH;
+                this.y = this.ropeY + tileH - this.h;
+                return;
+            }
+            if (isRope(tile) && input.up && this.vy < 0) {
                 this.onRope = true;
                 this.vx = 0; this.vy = 0;
                 this.ropeY = row * tileH;
@@ -185,7 +196,7 @@ export class Player {
     }
 
     _updateRope(input, solidMap, tileW, tileH, customSolidMap) {
-        if (input.jumpPressed) { this.onRope = false; this.vy = JUMP_FORCE; return; }
+        if (input.jumpPressed) { this.onRope = false; this.vy = JUMP_FORCE; this.hookCooldown = 10; return; }
         this.vy = 0;
         if (input.left) { this.x -= ROPE_SPEED; this.facing = -1; }
         if (input.right) { this.x += ROPE_SPEED; this.facing = 1; }

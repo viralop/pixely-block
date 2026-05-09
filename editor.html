@@ -75,9 +75,27 @@
   .pal-tile {
     cursor: grab; border: 2px solid transparent; border-radius: 2px;
     image-rendering: pixelated; image-rendering: crisp-edges;
+    position: relative;
   }
   .pal-tile:hover { border-color: #5ee8d0; }
   .pal-tile.sel { border-color: #e94560; box-shadow: 0 0 6px rgba(233,69,96,0.4); }
+
+  #tile-info-popup {
+    display: none; position: fixed; z-index: 10000;
+    background: #1a1028; border: 2px solid #5ee8d0; border-radius: 6px;
+    padding: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    pointer-events: none;
+  }
+  #tile-info-popup .tip-preview {
+    width: 64px; height: 64px; image-rendering: pixelated; image-rendering: crisp-edges;
+    border: 1px solid #2a1a3a; border-radius: 3px; margin-bottom: 6px;
+  }
+  #tile-info-popup .tip-label {
+    font-size: 12px; color: #fff; font-weight: bold; white-space: nowrap;
+  }
+  #tile-info-popup .tip-id {
+    font-size: 11px; color: #5ee8d0; margin-top: 2px;
+  }
 
   #sel-info {
     padding: 6px 10px; font-size: 11px; color: #7a6a8a;
@@ -203,6 +221,7 @@
       <button class="btn green" id="btn-save">Save</button>
       <button class="btn blue" id="btn-export">Export JSON</button>
       <button class="btn blue" id="btn-import">Import JSON</button>
+      <button class="btn" id="btn-test" style="background:#e94560;width:100%;text-align:center;margin-top:4px;">Test Level</button>
     </div>
 
     <div style="padding:6px 10px;border-top:1px solid #2a2a4a;">
@@ -257,6 +276,11 @@
 </div>
 
 <canvas id="ghost" width="54" height="54"></canvas>
+<div id="tile-info-popup">
+  <canvas class="tip-preview" width="64" height="64"></canvas>
+  <div class="tip-label"></div>
+  <div class="tip-id"></div>
+</div>
 <input type="file" id="file-input" accept=".json" style="display:none">
 
 <script>
@@ -465,6 +489,9 @@ function buildPalette() {
       const r = getTileSrcRect(id);
       x.drawImage(r.img, r.sx, r.sy, TS, TS, 0, 0, 32, 32);
       c.addEventListener('mousedown', onPalDown);
+      c.addEventListener('mouseenter', (e) => showTileInfo(e, id, ts.name));
+      c.addEventListener('mousemove', (e) => moveTileInfo(e));
+      c.addEventListener('mouseleave', hideTileInfo);
       pal.appendChild(c);
     }
   }
@@ -495,17 +522,48 @@ function updSelPreview() {
 
 function onPalDown(e) {
   e.preventDefault();
-  selectTile(+e.currentTarget.dataset.id);
+  const id = +e.currentTarget.dataset.id;
+  selectTile(id);
   dragging = true;
   ghostCv.width = RT; ghostCv.height = RT;
+  const ts = getTileSet(id);
+  const idx = id - ts.gid0;
+  const sx = (idx % ts.cols) * (TS + TSPACE);
+  const sy = Math.floor(idx / ts.cols) * (TS + TSPACE);
+  const img = tilesetImgs[ts.name];
   ghostCx.imageSmoothingEnabled = false;
-  const r = getTileSrcRect(selId);
-  ghostCx.drawImage(r.img, r.sx, r.sy, TS, TS, 0, 0, RT, RT);
+  ghostCx.drawImage(img || tileImg, sx, sy, TS, TS, 0, 0, RT, RT);
   ghostCv.style.display = 'block';
   moveGhost(e.clientX, e.clientY);
 }
 
 function moveGhost(mx, my) { ghostCv.style.left = (mx - RT/2) + 'px'; ghostCv.style.top = (my - RT/2) + 'px'; }
+
+// === TILE INFO POPUP ===
+function showTileInfo(e, id, setName) {
+  const popup = document.getElementById('tile-info-popup');
+  const canvas = popup.querySelector('.tip-preview');
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, 64, 64);
+  const r = getTileSrcRect(id);
+  ctx.drawImage(r.img, r.sx, r.sy, TS, TS, 0, 0, 64, 64);
+  popup.querySelector('.tip-label').textContent = setName + ' Tile';
+  popup.querySelector('.tip-id').textContent = 'ID: ' + id;
+  popup.style.display = 'block';
+  moveTileInfo(e);
+}
+function moveTileInfo(e) {
+  const popup = document.getElementById('tile-info-popup');
+  let x = e.clientX + 16, y = e.clientY + 16;
+  if (x + 100 > window.innerWidth) x = e.clientX - 110;
+  if (y + 110 > window.innerHeight) y = e.clientY - 120;
+  popup.style.left = x + 'px';
+  popup.style.top = y + 'px';
+}
+function hideTileInfo() {
+  document.getElementById('tile-info-popup').style.display = 'none';
+}
 
 // === GLOBAL MOUSE ===
 document.addEventListener('mousemove', (e) => {
@@ -908,6 +966,18 @@ function setupUI() {
   document.getElementById('btn-clear').onclick = () => { hist.snap(); map = mk(levelW, levelH); solidMap = mkBool(levelW, levelH); paintMap = mkBool(levelW, levelH); entities = []; updCount(); };
   document.getElementById('btn-exit').onclick = () => showPicker();
   document.getElementById('btn-save').onclick = () => saveCurrentLevel();
+  document.getElementById('btn-test').onclick = () => {
+    const data = {
+      name: editingName, w: levelW, h: levelH,
+      bgColor: document.getElementById('inp-bg') ? document.getElementById('inp-bg').value : '#1a2a1a',
+      theme: 'grass',
+      spawn: actionPoints.start || { tx: 1, ty: levelH - 2 },
+      exit: actionPoints.end || { tx: levelW - 2, ty: levelH - 2 },
+      map, solidMap, entities: entities.map(e => ({...e}))
+    };
+    localStorage.setItem('testLevel', JSON.stringify(data));
+    window.open('index.html?test=1', '_blank');
+  };
   document.getElementById('btn-export').onclick = () => {
     const b = new Blob([JSON.stringify({ name: editingName, w: levelW, h: levelH, map, entities }, null, 2)], {type:'application/json'});
     const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = editingName.replace(/\s+/g, '_') + '.json'; a.click(); toast('Exported!');
@@ -934,9 +1004,9 @@ async function init() {
     [tileImg, bgImg, charImg] = await Promise.all([loadImg(TILE_URL), loadImg(BG_URL), loadImg(CHAR_URL)]);
     tilesetImgs['Base'] = tileImg;
     const extra = await Promise.all([
-      loadImg(FARM_URL).then(i => { tilesetImgs['Farm'] = i; }),
-      loadImg(FOOD_URL).then(i => { tilesetImgs['Food'] = i; }),
-      loadImg(IND_URL).then(i => { tilesetImgs['Industrial'] = i; }),
+      loadImg(FARM_URL).then(i => { tilesetImgs['Farm'] = i; console.log('Loaded Farm tiles'); }).catch(e => console.warn('Failed Farm:', e)),
+      loadImg(FOOD_URL).then(i => { tilesetImgs['Food'] = i; console.log('Loaded Food tiles'); }).catch(e => console.warn('Failed Food:', e)),
+      loadImg(IND_URL).then(i => { tilesetImgs['Industrial'] = i; console.log('Loaded Industrial tiles'); }).catch(e => console.warn('Failed Industrial:', e)),
     ]);
   }
   catch(e) { document.getElementById('loading').textContent = 'Failed to load assets. Run: node server.js'; return; }

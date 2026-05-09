@@ -73,7 +73,7 @@ const SOLID_SET = new Set([
 ]);
 
 export function isSolid(tileId, customSolidMap, row, col) {
-    if (KEY_IDS.has(tileId) || COIN_IDS.has(tileId) || HEART_IDS.has(tileId) || EXIT_IDS.has(tileId) || HAZARD_IDS.has(tileId) || SPRING_IDS.has(tileId) || LADDER_IDS.has(tileId) || ROPE_IDS.has(tileId) || CHECKPOINT_IDS.has(tileId)) return false;
+    if (KEY_IDS.has(tileId) || COIN_IDS.has(tileId) || HEART_IDS.has(tileId) || EXIT_IDS.has(tileId) || HAZARD_IDS.has(tileId) || SPRING_IDS.has(tileId) || LADDER_IDS.has(tileId) || ROPE_IDS.has(tileId) || HOOK_IDS.has(tileId) || CHECKPOINT_IDS.has(tileId)) return false;
     if (customSolidMap) {
         return !!(customSolidMap[row] && customSolidMap[row][col]);
     }
@@ -86,13 +86,15 @@ export const HEART_IDS = new Set([72]);
 export const EXIT_IDS = new Set([178]);
 export const LADDER_IDS = new Set([79, 99]);
 export const ROPE_IDS = new Set([118, 119, 120, 97, 117, 137]);
+export const HOOK_IDS = new Set([3039, 3040]);
 export const SPRING_IDS = new Set([135, 136]);
 export const CHECKPOINT_IDS = new Set([139, 140]);
 export const KEY_IDS = new Set([55]);
 export const LOCK_IDS = new Set([56]);
 
 export function isLadder(tileId) { return LADDER_IDS.has(tileId); }
-export function isRope(tileId) { return ROPE_IDS.has(tileId); }
+export function isRope(tileId) { return ROPE_IDS.has(tileId) || HOOK_IDS.has(tileId); }
+export function isHook(tileId) { return HOOK_IDS.has(tileId); }
 export function isSpring(tileId) { return SPRING_IDS.has(tileId); }
 
 export function getTileAt(map, col, row) {

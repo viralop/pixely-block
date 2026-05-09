@@ -89,6 +89,21 @@ export class Game {
         this.state = 'MENU';
         this._buildMenu();
         this._menuHeld = true;
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('test')) {
+            const testRaw = localStorage.getItem('testLevel');
+            if (testRaw) {
+                localStorage.removeItem('testLevel');
+                try {
+                    const tl = JSON.parse(testRaw);
+                    tl.isTest = true;
+                    this._loadTestLevel(tl);
+                    this._loop = this._loop.bind(this);
+                    requestAnimationFrame(this._loop);
+                    return;
+                } catch(e) { console.warn('Failed to load test level', e); }
+            }
+        }
         this._loop = this._loop.bind(this);
         requestAnimationFrame(this._loop);
     }
@@ -267,6 +282,40 @@ export class Game {
         this._loadLevel(0);
     }
 
+    _loadTestLevel(level) {
+        const h = level.map.length, w = level.map[0].length;
+        level.width = w;
+        level.height = h;
+        if (!level.solidMap) {
+            level.solidMap = level.map.map(row => row.map(id => isSolid(id)));
+        }
+        this.level = level;
+        this.levelIdx = 0;
+        this.triggeredSprings = new Map();
+        this.activatedCheckpoints = new Set();
+
+        const sx = level.spawn.tx * Sprites.RENDER_TILE;
+        const sy = level.spawn.ty * Sprites.RENDER_TILE;
+        this.player = new Player(sx, sy);
+
+        this.enemies = (level.entities || []).map(e => {
+            return new Enemy(e.type, e.tx, e.ty, e.patrolL, e.patrolR, Sprites.RENDER_TILE, Sprites.RENDER_TILE);
+        });
+
+        this.boss = null;
+        this.bossDefeated = false;
+        this.bossArenaActive = false;
+        this.bossArenaLeft = 0;
+        this.bossIntroTimer = 0;
+        this.hitSet = new Set();
+        this.hasKey = false;
+        this.score = 0;
+        this.particles = [];
+        this.camX = 0;
+        this.camY = 0;
+        this.state = 'PLAYING';
+    }
+
     _loadLevel(idx) {
         const level = getLevel(idx);
         if (!level) { this.state = 'VICTORY'; return; }
@@ -318,7 +367,7 @@ export class Game {
     }
 
     _advanceLevel() {
-        if (this.customMode) {
+        if (this.customMode || this.level.isTest) {
             this.state = 'VICTORY';
             return;
         }
@@ -341,6 +390,15 @@ export class Game {
         this._checkSpringBounce();
 
         this.player.update(this.input, this.level.map, Sprites.RENDER_TILE, Sprites.RENDER_TILE, this.level.solidMap);
+
+        if (this.player.onGround) {
+            const feetCol = Math.floor((this.player.x + this.player.w / 2) / Sprites.RENDER_TILE);
+            const feetRow = Math.floor((this.player.y + this.player.h) / Sprites.RENDER_TILE);
+            const underTile = this.level.map[feetRow] && this.level.map[feetRow][feetCol];
+            if (underTile >= 3100 && underTile <= 3102) {
+                this.player.vx -= this.player.facing * 1.5;
+            }
+        }
 
         if (this.player.didJump) {
             this.audio.jump();
