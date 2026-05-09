@@ -37,7 +37,7 @@ function loadExtraSprites() {
         knight_run: 'kenney_pixel-platformer/human chars/tile_10091.png',
         knight_atk1: 'kenney_pixel-platformer/human chars/tile_10088.png',
         knight_atk2: 'kenney_pixel-platformer/human chars/tile_10089.png',
-        sword: 'kenney_pixel-platformer/human chars/sword_iron.png',
+        sword: 'kenney_pixel-platformer/human chars/tile_10088.png',
         queen: 'kenney_pixel-platformer/human chars/tile_10092.png',
         boss1: 'kenney_pixel-platformer/bosses/tile_10085.png',
         boss2: 'kenney_pixel-platformer/bosses/tile_10086.png',

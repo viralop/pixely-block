@@ -85,7 +85,7 @@ export class Input {
         return this.justPressed('KeyJ') || this.justPressed('KeyZ') || this.justPressed('KeyX') || this.isDown('KeyJ') || this.isDown('KeyZ') || this.isDown('KeyX') || this.touch.attack;
     }
     get enter() {
-        return this.justPressed('Enter') || this.justPressed('Space');
+        return this.justPressed('Enter');
     }
     get escape() {
         return this.justPressed('Escape');

@@ -88,6 +88,7 @@ export class Game {
         }
         this.state = 'MENU';
         this._buildMenu();
+        this._menuHeld = true;
         this._loop = this._loop.bind(this);
         requestAnimationFrame(this._loop);
     }
@@ -139,10 +140,10 @@ export class Game {
                 if (this.input.enter) this._advanceLevel();
                 break;
             case 'GAME_OVER':
-                if (this.input.enter) { this.state = 'MENU'; this._buildMenu(); }
+                if (this.input.enter) { this.state = 'MENU'; this._buildMenu(); this._menuHeld = true; }
                 break;
             case 'VICTORY':
-                if (this.input.enter) { this.state = 'MENU'; this._buildMenu(); }
+                if (this.input.enter) { this.state = 'MENU'; this._buildMenu(); this._menuHeld = true; }
                 break;
             case 'QUEEN_RESCUED':
                 if (this.input.enter) this._advanceLevel();
@@ -169,8 +170,14 @@ export class Game {
         }
 
         if (this.input.enter) {
-            const item = items[this.menuSel];
-            if (item && item.action) item.action();
+            if (!this._menuHeld) {
+                const item = items[this.menuSel];
+                if (item && item.action) item.action();
+                this._menuHeld = true;
+            }
+        }
+        if (!this.input.enter && !this.input.isDown('ArrowUp') && !this.input.isDown('ArrowDown') && !this.input.isDown('KeyW') && !this.input.isDown('KeyS')) {
+            this._menuHeld = false;
         }
     }
 
@@ -198,7 +205,7 @@ export class Game {
         } else { this._pauseHeld = false; }
         if (this.input.enter) {
             if (this.pauseSel === 0) { this.state = 'PLAYING'; }
-            else { this.state = 'MENU'; this._buildMenu(); }
+            else { this.state = 'MENU'; this._buildMenu(); this._menuHeld = true; }
         }
     }
 
@@ -220,7 +227,7 @@ export class Game {
             this.optHeld = true;
             if (this.optSel === 0) { /* controls view */ }
             else if (this.optSel === 1) { /* sound settings view */ }
-            else { this.state = 'MENU'; this._buildMenu(); }
+            else { this.state = 'MENU'; this._buildMenu(); this._menuHeld = true; }
         }
         if (this.input.escape) {
             this.optHeld = true;

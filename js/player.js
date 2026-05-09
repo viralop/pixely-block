@@ -230,31 +230,22 @@ export class Player {
     _getSwingAngle() {
         const t = 1 - this.attackTimer / ATTACK_DURATION;
         const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-        if (this.facing > 0) {
-            return (-Math.PI / 3) + (Math.PI / 2) * eased;
-        } else {
-            return (Math.PI + Math.PI / 3) - (Math.PI / 2) * eased;
-        }
+        return (-Math.PI / 3) + (Math.PI / 2) * eased;
     }
 
     _renderWeapon(ctx, drawX, drawY, sz) {
-        const handX = this.facing > 0
-            ? drawX + sz * 0.85
-            : drawX + sz * 0.15;
-        const handY = drawY + sz * 0.4;
         const angle = this._getSwingAngle();
+        const offX = this.facing > 0 ? sz * 0.6 : -sz * 0.8;
+        const offY = -sz * 0.15;
+        const swordSz = sz * 0.9;
 
         ctx.save();
-        ctx.translate(handX, handY);
+        ctx.translate(drawX + offX + swordSz / 2, drawY + offY + swordSz / 2);
+        if (this.facing < 0) {
+            ctx.scale(-1, 1);
+        }
         ctx.rotate(angle);
-
-        const weaponKey = hasExtra('sword') ? 'sword'
-            : (this.attackTimer % 6 < 3) ? 'knight_atk1' : 'knight_atk2';
-        const sx = -sz * 0.15;
-        const sy = -sz;
-        ctx.translate(sx + sz / 2, sy + sz / 2);
-        ctx.scale(-1, 1);
-        drawExtra(ctx, weaponKey, -sz / 2, -sz / 2, sz, false);
+        drawExtra(ctx, 'sword', -swordSz / 2, -swordSz / 2, swordSz, false);
         ctx.restore();
     }
 
