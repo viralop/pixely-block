@@ -102,6 +102,7 @@ export class Game {
             this._update();
             this.accumulator -= FIXED_DT;
         }
+        this.input.update();
         this._render();
         requestAnimationFrame(this._loop);
     }
