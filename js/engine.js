@@ -165,8 +165,6 @@ export class Game {
                 this._menuHeld = true;
                 this.menuSel = (this.menuSel + 1) % items.length;
             }
-        } else {
-            this._menuHeld = false;
         }
 
         if (this.input.enter) {
@@ -176,7 +174,7 @@ export class Game {
                 this._menuHeld = true;
             }
         }
-        if (!this.input.enter && !this.input.isDown('ArrowUp') && !this.input.isDown('ArrowDown') && !this.input.isDown('KeyW') && !this.input.isDown('KeyS')) {
+        if (!this.input.enter && !this.input.isDown('ArrowUp') && !this.input.isDown('ArrowDown') && !this.input.isDown('KeyW') && !this.input.isDown('KeyS') && !this.input.isDown('Escape')) {
             this._menuHeld = false;
         }
     }
@@ -206,6 +204,25 @@ export class Game {
         if (this.input.enter) {
             if (this.pauseSel === 0) { this.state = 'PLAYING'; }
             else { this.state = 'MENU'; this._buildMenu(); this._menuHeld = true; }
+        }
+        if (this.input.click) {
+            const cx = this.canvas.width / 2;
+            const cy = this.canvas.height / 2;
+            const pw = 360, ph = 240;
+            const py = cy - ph / 2;
+            const btnW = 260, itemH = 42;
+            const startY = py + 120;
+            const bx = cx - btnW / 2;
+            const mx = this.input.mouseX, my = this.input.mouseY;
+            for (let i = 0; i < 2; i++) {
+                const by = startY + i * itemH;
+                if (mx >= bx && mx <= bx + btnW && my >= by && my <= by + itemH) {
+                    this.pauseSel = i;
+                    if (i === 0) { this.state = 'PLAYING'; }
+                    else { this.state = 'MENU'; this._buildMenu(); this._menuHeld = true; }
+                    break;
+                }
+            }
         }
     }
 

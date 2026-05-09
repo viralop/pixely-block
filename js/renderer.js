@@ -8,6 +8,14 @@ export const RENDER_CHAR = CHAR_SIZE * SCALE;
 const TILE_COLS = 20;
 const CHAR_COLS = 9;
 
+const EXPANSION_TILESETS = [
+    { gid0: 1000, cols: 16, count: 112, path: 'kenney_pixel-platformer-farm-expansion/Tilemap/tilemap.png' },
+    { gid0: 2000, cols: 16, count: 112, path: 'kenney_pixel-platformer-food-expansion/Tilemap/tilemap.png' },
+    { gid0: 3000, cols: 16, count: 112, path: 'kenney_pixel-platformer-industrial-expansion/Tilemap/tilemap.png' },
+];
+
+let expansionSheets = {};
+
 const ASSET_PATHS = {
     tiles: 'kenney_pixel-platformer/Tilemap/tilemap.png',
     characters: 'kenney_pixel-platformer/Tilemap/tilemap-characters.png',
@@ -23,11 +31,15 @@ export function isLoaded() {
 }
 
 export function loadAll() {
+    const expPromises = EXPANSION_TILESETS.map(ts =>
+        loadImage(ts.path).then(img => { expansionSheets[ts.gid0] = img; }).catch(e => { console.warn('Failed to load expansion tiles:', ts.path); })
+    );
     return Promise.all([
         loadImage(ASSET_PATHS.tiles).then(img => sheets.tiles = img),
         loadImage(ASSET_PATHS.characters).then(img => sheets.characters = img),
         loadImage(ASSET_PATHS.backgrounds).then(img => sheets.backgrounds = img),
-        loadExtraSprites()
+        loadExtraSprites(),
+        ...expPromises
     ]);
 }
 
@@ -37,7 +49,7 @@ function loadExtraSprites() {
         knight_run: 'kenney_pixel-platformer/human chars/tile_10091.png',
         knight_atk1: 'kenney_pixel-platformer/human chars/tile_10088.png',
         knight_atk2: 'kenney_pixel-platformer/human chars/tile_10089.png',
-        sword: 'kenney_pixel-platformer/human chars/tile_10088.png',
+        sword: 'kenney_pixel-platformer/human chars/tile_01066.png',
         queen: 'kenney_pixel-platformer/human chars/tile_10092.png',
         boss1: 'kenney_pixel-platformer/bosses/tile_10085.png',
         boss2: 'kenney_pixel-platformer/bosses/tile_10086.png',
@@ -94,14 +106,24 @@ function loadImage(src) {
 
 export function drawTile(ctx, tileId, screenX, screenY) {
     if (tileId <= 0) return;
-    const index = tileId - 28;
-    const col = index % TILE_COLS;
-    const row = Math.floor(index / TILE_COLS);
+    let sheet = sheets.tiles, cols = TILE_COLS, gid0 = 28;
+    for (const ts of EXPANSION_TILESETS) {
+        if (tileId >= ts.gid0 && tileId < ts.gid0 + ts.count) {
+            sheet = expansionSheets[ts.gid0];
+            cols = ts.cols;
+            gid0 = ts.gid0;
+            break;
+        }
+    }
+    if (!sheet) return;
+    const index = tileId - gid0;
+    const col = index % cols;
+    const row = Math.floor(index / cols);
     const sx = col * (TILE_SIZE + 1);
     const sy = row * (TILE_SIZE + 1);
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(
-        sheets.tiles,
+        sheet,
         sx, sy, TILE_SIZE, TILE_SIZE,
         Math.round(screenX), Math.round(screenY), RENDER_TILE + 1, RENDER_TILE + 1
     );

@@ -266,6 +266,16 @@ const BGTS = 24, BGC = 8, BGS = 1;
 const TILE_URL = 'kenney_pixel-platformer/Tilemap/tilemap.png';
 const CHAR_URL = 'kenney_pixel-platformer/Tilemap/tilemap-characters.png';
 const BG_URL = 'kenney_pixel-platformer/Tilemap/tilemap-backgrounds.png';
+const FARM_URL = 'kenney_pixel-platformer-farm-expansion/Tilemap/tilemap.png';
+const FOOD_URL = 'kenney_pixel-platformer-food-expansion/Tilemap/tilemap.png';
+const IND_URL = 'kenney_pixel-platformer-industrial-expansion/Tilemap/tilemap.png';
+
+const TILESETS = [
+  { name: 'Base', url: TILE_URL, gid0: 28, cols: 20, rows: 9, count: 180 },
+  { name: 'Farm', url: FARM_URL, gid0: 1000, cols: 16, rows: 7, count: 112 },
+  { name: 'Food', url: FOOD_URL, gid0: 2000, cols: 16, rows: 7, count: 112 },
+  { name: 'Industrial', url: IND_URL, gid0: 3000, cols: 16, rows: 7, count: 112 },
+];
 
 const cv = document.getElementById('editor-canvas');
 const cx = cv.getContext('2d');
@@ -273,6 +283,7 @@ const ghostCv = document.getElementById('ghost');
 const ghostCx = ghostCv.getContext('2d');
 
 let tileImg, bgImg, charImg;
+let tilesetImgs = {};
 let levelW = 45, levelH = 10;
 let map = mk(levelW, levelH);
 let solidMap = mkBool(levelW, levelH);
@@ -419,26 +430,43 @@ function resize() {
 
 function s2w(sx, sy) { return { x: sx + camX, y: sy + camY }; }
 
+function getTileSet(id) {
+  for (let i = TILESETS.length - 1; i >= 0; i--) {
+    const ts = TILESETS[i];
+    if (id >= ts.gid0 && id < ts.gid0 + ts.count) return ts;
+  }
+  return TILESETS[0];
+}
+
 function getTileSrcRect(id) {
-  const i = id - GID0;
-  return { sx: (i % TCOLS) * (TS + TSPACE), sy: Math.floor(i / TCOLS) * (TS + TSPACE) };
+  const ts = getTileSet(id);
+  const i = id - ts.gid0;
+  return { sx: (i % ts.cols) * (TS + TSPACE), sy: Math.floor(i / ts.cols) * (TS + TSPACE), img: tilesetImgs[ts.name] || tileImg };
 }
 
 // === PALETTE ===
 function buildPalette() {
   const pal = document.getElementById('palette');
   pal.innerHTML = '';
-  for (let i = 0; i < NTILES; i++) {
-    const id = i + GID0;
-    const c = document.createElement('canvas');
-    c.width = 32; c.height = 32; c.className = 'pal-tile' + (id === selId ? ' sel' : '');
-    c.dataset.id = id;
-    const x = c.getContext('2d');
-    x.imageSmoothingEnabled = false;
-    const r = getTileSrcRect(id);
-    x.drawImage(tileImg, r.sx, r.sy, TS, TS, 0, 0, 32, 32);
-    c.addEventListener('mousedown', onPalDown);
-    pal.appendChild(c);
+  for (const ts of TILESETS) {
+    const hdr = document.createElement('div');
+    hdr.style.cssText = 'width:100%;padding:4px 6px;font-size:11px;font-weight:bold;color:#5ee8d0;border-bottom:1px solid #2a1a3a;margin-bottom:2px;';
+    hdr.textContent = ts.name + ' (' + ts.gid0 + '-' + (ts.gid0 + ts.count - 1) + ')';
+    pal.appendChild(hdr);
+    const img = tilesetImgs[ts.name];
+    if (!img) continue;
+    for (let i = 0; i < ts.count; i++) {
+      const id = i + ts.gid0;
+      const c = document.createElement('canvas');
+      c.width = 32; c.height = 32; c.className = 'pal-tile' + (id === selId ? ' sel' : '');
+      c.dataset.id = id;
+      const x = c.getContext('2d');
+      x.imageSmoothingEnabled = false;
+      const r = getTileSrcRect(id);
+      x.drawImage(r.img, r.sx, r.sy, TS, TS, 0, 0, 32, 32);
+      c.addEventListener('mousedown', onPalDown);
+      pal.appendChild(c);
+    }
   }
   updSelPreview();
 }
@@ -455,7 +483,7 @@ function updSelPreview() {
   const x = c.getContext('2d');
   x.imageSmoothingEnabled = false; x.clearRect(0, 0, 32, 32);
   const r = getTileSrcRect(selId);
-  x.drawImage(tileImg, r.sx, r.sy, TS, TS, 0, 0, 32, 32);
+  x.drawImage(r.img, r.sx, r.sy, TS, TS, 0, 0, 32, 32);
   document.getElementById('sel-label').textContent = 'Tile ID: ' + selId;
   const solid = SOLID_TILES.has(selId);
   const sl = document.getElementById('sel-solid');
@@ -472,7 +500,7 @@ function onPalDown(e) {
   ghostCv.width = RT; ghostCv.height = RT;
   ghostCx.imageSmoothingEnabled = false;
   const r = getTileSrcRect(selId);
-  ghostCx.drawImage(tileImg, r.sx, r.sy, TS, TS, 0, 0, RT, RT);
+  ghostCx.drawImage(r.img, r.sx, r.sy, TS, TS, 0, 0, RT, RT);
   ghostCv.style.display = 'block';
   moveGhost(e.clientX, e.clientY);
 }
@@ -653,7 +681,7 @@ function render() {
   const sr = Math.max(0, Math.floor(cy0 / RT)), er = Math.min(levelH - 1, Math.ceil((cy0 + cv.height) / RT));
   for (let r = sr; r <= er; r++) for (let c = sc; c <= ec; c++) {
     const x = c * RT, y = r * RT, id = (map[r] && map[r][c]) || 0;
-    if (id > 0) { const rc = getTileSrcRect(id); cx.drawImage(tileImg, rc.sx, rc.sy, TS, TS, x, y, RT, RT); }
+    if (id > 0) { const rc = getTileSrcRect(id); cx.drawImage(rc.img, rc.sx, rc.sy, TS, TS, x, y, RT, RT); }
     if (solidMap[r] && solidMap[r][c]) { cx.fillStyle = 'rgba(255,0,0,0.18)'; cx.fillRect(x, y, RT, RT); }
     else if (paintMap[r] && paintMap[r][c]) { cx.fillStyle = 'rgba(0,255,0,0.18)'; cx.fillRect(x, y, RT, RT); }
     cx.strokeStyle = id > 0 ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.12)';
@@ -902,7 +930,15 @@ function setupUI() {
 
 // === INIT ===
 async function init() {
-  try { [tileImg, bgImg, charImg] = await Promise.all([loadImg(TILE_URL), loadImg(BG_URL), loadImg(CHAR_URL)]); }
+  try {
+    [tileImg, bgImg, charImg] = await Promise.all([loadImg(TILE_URL), loadImg(BG_URL), loadImg(CHAR_URL)]);
+    tilesetImgs['Base'] = tileImg;
+    const extra = await Promise.all([
+      loadImg(FARM_URL).then(i => { tilesetImgs['Farm'] = i; }),
+      loadImg(FOOD_URL).then(i => { tilesetImgs['Food'] = i; }),
+      loadImg(IND_URL).then(i => { tilesetImgs['Industrial'] = i; }),
+    ]);
+  }
   catch(e) { document.getElementById('loading').textContent = 'Failed to load assets. Run: node server.js'; return; }
   document.getElementById('loading').style.display = 'none';
   buildPalette();

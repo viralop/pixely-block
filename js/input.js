@@ -2,6 +2,10 @@ export class Input {
     constructor() {
         this.keys = {};
         this.prevKeys = {};
+        this._escHeld = false;
+        this.click = false;
+        this.mouseX = 0;
+        this.mouseY = 0;
         this.touch = { active: false, left: false, right: false, jump: false, attack: false };
         this._onKeyDown = (e) => {
             this.keys[e.code] = true;
@@ -10,8 +14,16 @@ export class Input {
             }
         };
         this._onKeyUp = (e) => { this.keys[e.code] = false; };
+        this._onClick = (e) => {
+            const canvas = document.getElementById('gameCanvas');
+            const r = canvas.getBoundingClientRect();
+            this.mouseX = e.clientX - r.left;
+            this.mouseY = e.clientY - r.top;
+            this.click = true;
+        };
         window.addEventListener('keydown', this._onKeyDown);
         window.addEventListener('keyup', this._onKeyUp);
+        window.addEventListener('click', this._onClick);
         this._setupTouch();
     }
 
@@ -53,6 +65,8 @@ export class Input {
 
     update() {
         this.prevKeys = { ...this.keys };
+        this.click = false;
+        if (!this.isDown('Escape')) this._escHeld = false;
     }
 
     isDown(code) {
@@ -88,7 +102,9 @@ export class Input {
         return this.justPressed('Enter');
     }
     get escape() {
-        return this.justPressed('Escape');
+        if (this._escHeld) return false;
+        if (this.justPressed('Escape')) { this._escHeld = true; return true; }
+        return false;
     }
 
     destroy() {
