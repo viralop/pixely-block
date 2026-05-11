@@ -53,11 +53,14 @@ function loadExtraSprites() {
         queen: 'kenney_pixel-platformer/human chars/tile_10092.png',
         boss1: 'kenney_pixel-platformer/bosses/tile_10085.png',
         boss2: 'kenney_pixel-platformer/bosses/tile_10086.png',
-        boss3: 'kenney_pixel-platformer/bosses/tile_10087.png',
-        boss4: 'kenney_pixel-platformer/bosses/tile_10093.png',
-        boss5: 'kenney_pixel-platformer/bosses/tile_10095.png',
+        boss3: 'kenney_pixel-platformer/bosses/tile_10093.png',
+        boss4: 'kenney_pixel-platformer/bosses/tile_10095.png',
         boss_lvl: 'kenney_pixel-platformer/human chars/tile_10090.png',
-        axe: 'kenney_pixel-platformer/bosses/axe_silver.png'
+        axe: 'kenney_pixel-platformer/bosses/weapons bosses/axe_silver.png',
+        weapon2: 'kenney_pixel-platformer/bosses/weapons bosses/tile_0103.png',
+        weapon3: 'kenney_pixel-platformer/bosses/weapons bosses/tile_0104.png',
+        weapon4: 'kenney_pixel-platformer/bosses/weapons bosses/tile_0105.png',
+        weapon5: 'kenney_pixel-platformer/bosses/weapons bosses/tile_0106.png'
     };
     const promises = [];
     for (const [key, path] of Object.entries(paths)) {

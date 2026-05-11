@@ -1,109 +1,147 @@
 // Level 9: Tower Ascent
-// Place in js/levels/ folder to override the default
 
 export default {
   name: "Tower Ascent",
-  w: 50,
-  h: 14,
+  w: 90,
+  h: 16,
   bgColor: "#1a2a1a",
   theme: "grass",
-  spawn: {"tx":0,"ty":11},
-  exit: {"tx":20,"ty":0},
+  spawn: {"tx":2,"ty":9},
+  exit: {"tx":88,"ty":9},
   map: [
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,179,178,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,72,180,0,0,0,0,0,0,0,49,50,50,50,51,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,49,50,50,51,0,0,0,0,0,0,169,170,170,170,171,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,169,170,170,171,0,0,0,0,0,0,169,170,170,72,171,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,169,170,170,171,0,0,0,0,0,0,169,170,170,170,171,50,51,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,169,170,170,72,180,0,0,0,118,119,119,120,170,170,171,170,171,0,0,0,0,0,0,0,179,180,0,0,118,119,119,120,0,0,0,0,0,45,0,0,0,0],
-    [0,0,0,0,0,0,0,0,169,170,76,78,50,50,51,76,78,0,169,170,170,170,171,170,171,0,0,0,0,179,180,76,78,50,50,51,0,179,180,0,0,0,0,45,0,46,0,0,0,0],
-    [0,0,0,0,0,0,179,180,169,170,170,171,170,170,171,99,0,0,169,76,78,170,99,170,179,180,0,0,76,78,0,0,169,170,170,171,76,78,0,0,179,180,0,46,0,47,0,0,0,0],
-    [0,0,0,0,0,76,78,0,169,170,170,171,99,170,171,79,110,110,169,170,170,170,79,76,78,0,0,0,0,0,109,110,169,170,99,171,0,0,0,76,78,0,0,47,0,65,0,0,0,0],
-    [0,0,0,0,0,0,0,0,169,170,170,171,99,155,171,170,170,170,169,170,170,135,171,157,171,0,0,0,0,135,169,157,169,170,99,171,0,0,0,157,0,0,0,65,0,66,0,0,0,0],
-    [0,0,179,99,109,110,110,110,169,170,170,171,79,170,171,170,170,170,169,170,170,170,171,170,171,99,111,0,0,0,169,170,169,170,79,171,0,0,109,110,110,110,110,66,0,67,0,0,0,0],
-    [0,155,182,99,169,170,170,135,169,170,170,171,170,170,171,170,170,170,169,170,170,170,171,170,171,99,171,0,0,0,169,170,169,170,170,171,0,0,169,170,170,170,135,67,0,85,156,0,0,0],
-    [109,110,110,79,169,170,170,170,169,170,170,171,170,170,171,170,170,170,169,170,170,170,171,170,171,79,171,110,110,110,169,170,169,170,170,171,110,110,169,170,170,170,170,85,110,86,110,110,110,111],
-    [169,170,170,170,169,170,170,170,169,170,170,171,170,170,171,170,170,170,169,170,170,170,171,170,171,170,171,170,170,170,169,170,169,170,170,171,170,170,169,170,170,170,170,86,170,87,170,170,170,171],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3075,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3008,0,0,0,3008,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,179,0,0,0,3075,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3024,0,0,0,3024,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3008,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,179,55,0,0,3075,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3024,0,0,0,3024,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3024,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3041,0,0,0,0,0,0,179,0,0,0,3091,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3024,0,0,0,3024,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3024,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,179,0,0,0,3020,3021,3021,3021,3021,3021,3038,3021,3021,3021,3022,143,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3024,0,0,0,3024,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,3098,3097,0,0,3009,0,3041,0,0,0,3024,0,0,0,3042,3010,3010,3010,3010,3010,3010,3010,3042,0,0,0,0,0,0,0,0,0,179,0,0,0,0,0,0,0,0,1070,3053,0,37,0,0,163,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,72,0,179,0,0,3024,0,0,0,3024,0,0,0,0,0,0,0],
+    [0,3098,3097,3098,3097,0,0,3020,3038,3021,3021,3021,3021,3021,3021,3022,0,0,0,3024,0,0,0,3020,3021,3021,3021,3021,3038,3021,3021,3022,0,0,0,0,0,0,0,0,0,179,0,0,0,0,0,0,0,0,0,3053,0,37,0,0,3031,0,0,0,0,0,0,0,0,0,179,179,179,179,0,0,0,3087,3088,3090,0,0,3024,0,0,179,3024,0,0,0,0,0,0,0],
+    [0,3082,3081,3096,3080,3010,0,3009,3027,3064,3024,0,0,0,3024,0,0,0,0,3024,0,0,0,0,0,0,0,1070,3043,0,0,0,0,0,0,0,0,0,0,179,179,135,0,0,0,0,72,0,0,0,0,3053,0,37,0,0,3031,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3024,0,0,0,3024,0,0,0,0,0,0,0],
+    [3020,3038,3021,3021,3021,3021,3021,3021,3021,3022,3024,0,0,0,3024,72,0,0,179,3024,0,0,0,0,0,179,0,179,3043,0,0,0,179,179,0,0,3020,3021,3021,3021,3038,3022,0,0,0,179,179,179,0,0,0,3053,0,56,0,0,3031,0,0,0,0,0,0,0,0,3103,3104,3104,3104,3104,3106,0,0,0,0,0,0,0,3024,179,0,0,3040,0,0,0,179,0,3012,0],
+    [1070,3054,0,179,179,179,0,3058,0,0,3024,0,0,0,3024,179,0,0,179,3024,0,0,0,0,0,3042,0,0,3043,0,0,3037,0,0,0,0,0,0,3008,0,3052,0,0,0,0,0,1064,1069,1067,0,0,3053,0,56,0,0,3031,0,0,179,179,179,179,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3024,0,0,0,0,0,0,0,0,0,3028,3099],
+    [0,3054,0,3010,0,0,0,3058,0,0,3024,179,0,3100,3101,3102,0,0,0,3024,0,0,0,0,0,3103,3088,3090,3043,0,3004,3038,3005,3005,3005,3005,3006,0,3024,0,3052,0,0,0,3041,0,1100,1101,1103,0,0,3053,0,56,140,0,3031,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,179,0,0,0,3040,0,0,0,0,0,3099,3100,3101,3101,3101,3102],
+    [3103,3104,3105,3106,0,0,0,3073,0,3100,3101,3102,0,0,0,3076,3109,3109,3109,3110,3109,3109,3109,3077,0,0,0,0,3043,0,0,3053,1070,0,0,0,3008,0,3024,0,3052,0,0,0,3020,3021,3021,3038,3021,3021,3021,3021,3021,3021,3021,3021,3021,3022,3099,3100,3101,3101,3101,3102,3099,0,0,0,0,0,0,0,0,0,3062,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3099],
+    [0,3054,0,0,0,3087,3088,3090,0,0,0,0,0,0,0,3091,0,0,0,0,0,0,0,3075,0,0,0,0,3043,0,0,3053,0,0,0,0,3040,0,3024,0,3052,0,0,0,0,0,0,3053,0,0,0,3053,0,0,0,0,3031,3099,0,0,0,0,0,0,0,0,0,0,0,0,0,179,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,3054,0,0,0,0,3052,0,0,0,0,0,0,0,0,3091,0,0,0,0,0,0,0,3075,0,0,0,0,3043,0,0,3053,0,0,0,0,0,0,3024,0,3052,0,0,0,0,0,0,3053,0,0,0,3053,0,0,0,0,3031,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3062,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,3068,0,0,0,0,3069,0,0,0,0,0,0,0,0,3078,0,0,0,0,0,0,0,3078,0,0,0,0,3068,0,0,3068,0,0,0,0,0,0,3040,0,3069,0,0,0,0,0,0,3069,0,0,0,3069,0,0,0,0,3031,0,0,0,0,0,0,0,0,0,3103,3106,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3094,3029,3029,3029,3029,3029,3029,3029,3095,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3095,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029,3029],
   ],
   solidMap: [
-    [false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false],
-    [false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,true,true,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false],
-    [false,false,false,false,false,false,false,false,true,true,true,true,false,false,false,false,false,false,true,true,true,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false],
-    [false,false,false,false,false,false,false,false,true,true,true,true,false,false,false,false,false,false,true,true,true,false,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false],
-    [false,false,false,false,false,false,false,false,true,true,true,true,false,false,false,false,false,false,true,true,true,true,true,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false],
-    [false,false,false,false,false,false,false,false,true,true,true,false,false,false,false,false,false,false,false,false,true,true,true,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false],
-    [false,false,false,false,false,false,false,false,true,true,true,true,true,true,true,true,true,false,true,true,true,true,true,true,true,false,false,false,false,false,false,true,true,true,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false],
-    [false,false,false,false,false,false,false,false,true,true,true,true,true,true,true,false,false,false,true,true,true,true,false,true,false,false,false,false,true,true,false,false,true,true,true,true,true,true,false,false,false,false,false,false,false,false,false,false,false,false],
-    [false,false,false,false,false,true,true,false,true,true,true,true,false,true,true,false,true,true,true,true,true,true,false,true,true,false,false,false,false,false,true,true,true,true,false,true,false,false,false,true,true,false,false,false,false,false,false,false,false,false],
-    [false,false,false,false,false,false,false,false,true,true,true,true,false,false,true,true,true,true,true,true,true,false,true,false,true,false,false,false,false,false,true,false,true,true,false,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false],
-    [false,false,false,false,true,true,true,true,true,true,true,true,false,true,true,true,true,true,true,true,true,true,true,true,true,false,true,false,false,false,true,true,true,true,false,true,false,false,true,true,true,true,true,false,false,false,false,false,false,false],
-    [false,false,true,false,true,true,true,false,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,true,false,false,false,true,true,true,true,true,true,false,false,true,true,true,true,false,false,false,false,false,false,false,false],
-    [true,true,true,false,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,true,false,true,true,true,true],
-    [true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,true,false,true,true,true,true],
+    [false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false],
+    [false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false],
+    [false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false],
+    [false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false],
+    [false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,true,true,true,true,true,true,true,true,true,true,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false],
+    [false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,false,true,false,false,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,false,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false],
+    [false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,false,false,true,true,true,true,false,false,false,true,true,true,false,false,false,false,false,true,false,false,false,false,false,false,false,false],
+    [false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,true,true,false,false,false,false,true,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false],
+    [false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,false,false,true,false,false,false,false,false,false,true,false,true,false,false,false,false,true,true,false,false,true,true,true,true,true,true,false,false,false,true,true,true,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,false,true,true,true,true,true,true,false,false,false,false,false,false,false,false,true,false,false,true,false,false,false,true,false,false,false],
+    [false,false,false,true,true,true,false,false,false,false,false,false,false,false,false,true,false,false,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,false,false,true,true,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false],
+    [false,false,false,false,false,false,false,false,false,false,false,true,false,true,true,true,false,false,false,false,false,false,false,false,false,true,true,true,false,false,true,true,true,true,true,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,true,false,false,false,false,false,false,true,true,true,true,true],
+    [true,true,true,true,false,false,false,false,false,true,true,true,false,false,false,true,true,true,true,true,true,true,true,true,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,false,false,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,true,true,true,true,true,false,false,false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false],
+    [false,true,false,false,false,true,true,true,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false],
+    [false,true,false,false,false,false,true,false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false],
+    [false,true,false,false,false,false,true,false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false],
+    [false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false],
   ],
   entities:   [
     {
-      "type": "slime",
-      "tx": 14,
-      "ty": 9,
-      "patrolL": 14,
-      "patrolR": 18
-    },
-    {
-      "type": "slime",
-      "tx": 30,
-      "ty": 9,
-      "patrolL": 30,
-      "patrolR": 34
+      "type": "bat",
+      "tx": 26,
+      "ty": 8,
+      "patrolL": 23,
+      "patrolR": 29
     },
     {
       "type": "bat",
-      "tx": 16,
-      "ty": 5,
-      "patrolL": 14,
-      "patrolR": 20
+      "tx": 12,
+      "ty": 8,
+      "patrolL": 9,
+      "patrolR": 15
     },
     {
-      "type": "bat",
-      "tx": 28,
-      "ty": 5,
-      "patrolL": 25,
-      "patrolR": 32
+      "type": "skeleton3",
+      "tx": 20,
+      "ty": 10,
+      "patrolL": 17,
+      "patrolR": 23
     },
     {
-      "type": "bat",
-      "tx": 36,
-      "ty": 5,
-      "patrolL": 33,
+      "type": "skeleton1",
+      "tx": 6,
+      "ty": 11,
+      "patrolL": 3,
+      "patrolR": 9
+    },
+    {
+      "type": "skeleton1",
+      "tx": 37,
+      "ty": 7,
+      "patrolL": 34,
       "patrolR": 40
     },
     {
       "type": "skeleton1",
-      "tx": 22,
+      "tx": 35,
       "ty": 9,
-      "patrolL": 22,
-      "patrolR": 26
+      "patrolL": 32,
+      "patrolR": 38
+    },
+    {
+      "type": "skeleton3",
+      "tx": 49,
+      "ty": 10,
+      "patrolL": 46,
+      "patrolR": 52
+    },
+    {
+      "type": "skeleton3",
+      "tx": 49,
+      "ty": 3,
+      "patrolL": 46,
+      "patrolR": 52
+    },
+    {
+      "type": "skeleton3",
+      "tx": 60,
+      "ty": 10,
+      "patrolL": 57,
+      "patrolR": 63
+    },
+    {
+      "type": "bat",
+      "tx": 68,
+      "ty": 4,
+      "patrolL": 65,
+      "patrolR": 71
+    },
+    {
+      "type": "bat",
+      "tx": 68,
+      "ty": 12,
+      "patrolL": 65,
+      "patrolR": 71
+    },
+    {
+      "type": "bat",
+      "tx": 74,
+      "ty": 8,
+      "patrolL": 71,
+      "patrolR": 77
+    },
+    {
+      "type": "bat",
+      "tx": 84,
+      "ty": 5,
+      "patrolL": 81,
+      "patrolR": 87
     },
     {
       "type": "skeleton1",
-      "tx": 38,
-      "ty": 9,
-      "patrolL": 38,
-      "patrolR": 43
-    },
-    {
-      "type": "slime",
-      "tx": 11,
+      "tx": 68,
       "ty": 7,
-      "patrolL": 10,
-      "patrolR": 14
-    },
-    {
-      "type": "slime",
-      "tx": 33,
-      "ty": 7,
-      "patrolL": 32,
-      "patrolR": 35
+      "patrolL": 65,
+      "patrolR": 71
     }
   ],
 };

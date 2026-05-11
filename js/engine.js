@@ -298,11 +298,22 @@ export class Game {
         const sy = level.spawn.ty * Sprites.RENDER_TILE;
         this.player = new Player(sx, sy);
 
-        this.enemies = (level.entities || []).map(e => {
+        this.enemies = (level.entities || []).filter(e => !e.type.startsWith('boss_')).map(e => {
             return new Enemy(e.type, e.tx, e.ty, e.patrolL, e.patrolR, Sprites.RENDER_TILE, Sprites.RENDER_TILE);
         });
 
-        this.boss = null;
+        const bossEntities = (level.entities || []).filter(e => e.type.startsWith('boss_'));
+        const bossMap = { boss_orc: 0, boss_knight: 1, boss_demon: 2 };
+        if (bossEntities.length > 0) {
+            const be = bossEntities[0];
+            const bossIdx = bossMap[be.type] || 0;
+            const arenaL = Math.max(0, be.tx - 6);
+            const arenaR = Math.min(w - 1, be.tx + 3);
+            this.boss = new Boss(bossIdx, be.tx, be.ty, arenaL, arenaR, Sprites.RENDER_TILE, Sprites.RENDER_TILE);
+            this.bossIntroTimer = 120;
+        } else {
+            this.boss = null;
+        }
         this.bossDefeated = false;
         this.bossArenaActive = false;
         this.bossArenaLeft = 0;
@@ -313,7 +324,7 @@ export class Game {
         this.particles = [];
         this.camX = 0;
         this.camY = 0;
-        this.state = 'PLAYING';
+        this.state = this.boss ? 'BOSS_INTRO' : 'PLAYING';
     }
 
     _loadLevel(idx) {
@@ -470,7 +481,7 @@ export class Game {
                 }
             }
 
-            if (this.boss.checkAxeHit(this.player)) {
+            if (this.boss.checkProjectileHit(this.player)) {
                 if (this.player.takeDamage(15)) {
                     this.player.knockback(this.boss.x + this.boss.w / 2);
                     this.audio.hit();
