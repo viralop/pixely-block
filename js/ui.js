@@ -257,19 +257,84 @@ export class UI {
 
     renderMenu(menuSel, menuItems) {
         const ctx = this.ctx;
-        this._gradientBg(0, 0, this.w, this.h, '#080810', '#0e0818', true);
+
+        const bgGrad = ctx.createLinearGradient(0, 0, 0, this.h);
+        bgGrad.addColorStop(0, '#2a1a0e');
+        bgGrad.addColorStop(0.5, '#3d2b1a');
+        bgGrad.addColorStop(1, '#1e120a');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, this.w, this.h);
+
+        ctx.save();
+        ctx.globalAlpha = 0.04;
+        for (let i = 0; i < this.h; i += 4) {
+            ctx.fillStyle = i % 8 === 0 ? '#000' : '#5a4020';
+            ctx.fillRect(0, i, this.w, 2);
+        }
+        ctx.globalAlpha = 1;
+        ctx.restore();
 
         const cx = this.w / 2;
-        this._ornament(cx, 28);
-        this._glowText('PIXELY BLOCK', cx, 50, this.fontTitle, C.gold, 'rgba(255,180,0,0.5)');
-        this._ornament(cx, 72);
+        const panelX = cx - 210, panelY = 15, panelW = 420, panelH = this.h - 110;
+        ctx.fillStyle = 'rgba(62,42,28,0.85)';
+        ctx.beginPath();
+        ctx.roundRect(panelX, panelY, panelW, panelH, 10);
+        ctx.fill();
 
-        this._text("A Knight's Journey to Save the Queen", cx, 95, this.fontSmall, C.cyan);
-        this._text('Defeat the bosses every 5 levels!', cx, 112, this.fontSmall, C.textMuted);
+        ctx.strokeStyle = '#8b6914';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.roundRect(panelX + 4, panelY + 4, panelW - 8, panelH - 8, 7);
+        ctx.stroke();
 
-        const startY = 140;
-        const itemH = 42;
-        const btnW = 320;
+        ctx.strokeStyle = '#5a3a10';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(panelX + 10, panelY + 10, panelW - 20, panelH - 20, 5);
+        ctx.stroke();
+
+        ctx.fillStyle = '#8b6914';
+        const cornerSz = 8;
+        [[panelX + 14, panelY + 14], [panelX + panelW - 14 - cornerSz, panelY + 14],
+         [panelX + 14, panelY + panelH - 14 - cornerSz], [panelX + panelW - 14 - cornerSz, panelY + panelH - 14 - cornerSz]].forEach(([cx2, cy2]) => {
+            ctx.fillRect(cx2, cy2, cornerSz, cornerSz);
+        });
+
+        ctx.fillStyle = '#c8a832';
+        ctx.font = '24px "Press Start 2P"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('\u2726', cx, panelY + 25);
+
+        ctx.save();
+        ctx.shadowColor = 'rgba(200,168,50,0.5)';
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = '#f0d860';
+        ctx.font = '18px "Press Start 2P"';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText('PIXELY BLOCK', cx, panelY + 60);
+        ctx.shadowBlur = 0;
+        ctx.restore();
+
+        ctx.fillStyle = '#c8a832';
+        ctx.font = '14px "Press Start 2P"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('\u2726', cx - 80, panelY + 80);
+        ctx.fillText('\u2726', cx + 80, panelY + 80);
+        ctx.strokeStyle = '#8b6914';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(cx - 70, panelY + 80);
+        ctx.lineTo(cx + 70, panelY + 80);
+        ctx.stroke();
+
+        this._text("A Knight's Journey to Save the Queen", cx, panelY + 102, this.fontSmall, '#c4a882');
+        this._text('Defeat the bosses every 5 levels!', cx, panelY + 120, this.fontSmall, 'rgba(160,130,90,0.6)');
+
+        const startY = panelY + 150;
+        const itemH = 48;
+        const btnW = 260;
         const btnX = cx - btnW / 2;
 
         this.menuItems = menuItems;
@@ -278,26 +343,61 @@ export class UI {
             const item = menuItems[i];
             const y = startY + i * itemH;
             if (item.type === 'header') {
-                this._text(item.label, cx, y + 14, '10px "Press Start 2P"', C.cyan);
+                this._text(item.label, cx, y + 14, '10px "Press Start 2P"', '#c8a832');
                 continue;
             }
-            this._menuBtn(btnX, y, btnW, itemH - 2, item.label, i === menuSel);
+            this._parchmentBtn(btnX, y, btnW, itemH - 6, item.label, i === menuSel);
         }
 
-        const controlsY = this.h - 75;
-        ctx.save();
-        ctx.shadowColor = 'rgba(0,0,0,0.5)';
-        ctx.shadowBlur = 10;
-        this._gradientBg(cx - 230, controlsY - 12, 460, 58, C.darkPanel, 'rgba(14,8,24,0.8)');
-        ctx.shadowBlur = 0;
-        ctx.strokeStyle = C.border;
+        const controlsY = this.h - 55;
+        ctx.fillStyle = 'rgba(40,28,16,0.8)';
+        ctx.beginPath();
+        ctx.roundRect(cx - 210, controlsY - 14, 420, 50, 6);
+        ctx.fill();
+        ctx.strokeStyle = '#5a3a10';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.roundRect(cx - 229, controlsY - 11, 458, 56, 6);
+        ctx.roundRect(cx - 209, controlsY - 13, 418, 48, 5);
         ctx.stroke();
+        this._text('Up/Down - Select    Enter - Confirm', cx, controlsY + 4, this.fontSmall, 'rgba(196,168,130,0.7)');
+        this._text('WASD/Arrows - Move   Space/J - Jump/Attack', cx, controlsY + 24, this.fontSmall, 'rgba(160,130,90,0.5)');
+    }
+
+    _parchmentBtn(x, y, w, h, label, isSel) {
+        const ctx = this.ctx;
+        ctx.save();
+        if (isSel) {
+            ctx.shadowColor = 'rgba(200,168,50,0.4)';
+            ctx.shadowBlur = 14;
+            ctx.fillStyle = 'rgba(139,105,20,0.35)';
+            ctx.beginPath();
+            ctx.roundRect(x, y, w, h, 5);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = '#c8a832';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(x + 1, y + 1, w - 2, h - 2, 5);
+            ctx.stroke();
+            ctx.fillStyle = '#f0d860';
+            ctx.font = '10px "Press Start 2P"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('\u2724', x + 18, y + h / 2);
+            this._text(label, x + w / 2 + 6, y + h / 2, '13px "Press Start 2P"', '#f0e0a0');
+        } else {
+            ctx.fillStyle = 'rgba(50,35,20,0.4)';
+            ctx.beginPath();
+            ctx.roundRect(x, y, w, h, 5);
+            ctx.fill();
+            ctx.strokeStyle = '#5a3a10';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.roundRect(x + 1, y + 1, w - 2, h - 2, 5);
+            ctx.stroke();
+            this._text(label, x + w / 2, y + h / 2, '12px "Press Start 2P"', 'rgba(180,150,110,0.8)');
+        }
         ctx.restore();
-        this._text('Up/Down - Select    Enter - Confirm', cx, controlsY + 6, this.fontSmall, C.textDim);
-        this._text('WASD/Arrows - Move   Space/J - Jump/Attack', cx, controlsY + 26, this.fontSmall, C.textMuted);
     }
 
     renderOptions(optSel, masterVol, sfxVol, musicVol) {
