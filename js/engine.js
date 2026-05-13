@@ -26,6 +26,10 @@ export class Game {
         this.introTimer = 0;
         this.score = 0;
         this.levelIdx = 0;
+        this.currentLives = 3;
+        this.maxLives = 9;
+        this.nextLifeScore = 5000;
+        this.lifePopupTimer = 0;
         this.level = null;
         this.player = null;
         this.enemies = [];
@@ -272,6 +276,8 @@ export class Game {
 
     _startNewGame() {
         this.score = 0;
+        this.currentLives = 3;
+        this.nextLifeScore = 5000;
         this.levelIdx = 0;
         this.customMode = false;
         this.introLine = 0;
@@ -322,6 +328,8 @@ export class Game {
         this.hitSet = new Set();
         this.hasKey = false;
         this.score = 0;
+        this.currentLives = 3;
+        this.nextLifeScore = 5000;
         this.particles = [];
         this.camX = 0;
         this.camY = 0;
@@ -405,6 +413,59 @@ export class Game {
         };
     }
 
+    _loseLife() {
+        this.currentLives--;
+        if (this.currentLives <= 0) {
+            this.currentLives = 0;
+            this._triggerGameOver();
+        } else {
+            this._respawnPlayer();
+        }
+    }
+
+    _addLife() {
+        if (this.currentLives < this.maxLives) {
+            this.currentLives++;
+            this.lifePopupTimer = 120;
+            this._emitParticles(this.player.getCenterX(), this.player.getCenterY() - 30, '#4caf50', 15, 2, -3);
+        }
+    }
+
+    _checkExtraLife(scoreBefore, scoreAfter) {
+        const milestoneBefore = Math.floor(scoreBefore / this.nextLifeScore);
+        const milestoneAfter = Math.floor(scoreAfter / this.nextLifeScore);
+        if (milestoneAfter > milestoneBefore) {
+            const milestones = milestoneAfter - milestoneBefore;
+            for (let i = 0; i < milestones; i++) {
+                this._addLife();
+            }
+        }
+    }
+
+    _triggerGameOver() {
+        this.audio.gameOver();
+        this._emitParticles(this.player.getCenterX(), this.player.getCenterY(), '#e74c3c', 30, 3, -3);
+        this.state = 'GAME_OVER';
+    }
+
+    _respawnPlayer() {
+        this.player.health = this.player.maxHealth;
+        this.player.dead = false;
+        this.player.vx = 0;
+        this.player.vy = 0;
+        this.player.iframes = 90;
+        this.player.x = this.player.spawnX;
+        this.player.y = this.player.spawnY;
+        this.hasKey = false;
+        this._emitParticles(this.player.spawnX + this.player.w / 2, this.player.spawnY + this.player.h / 2, '#4caf50', 12, 2, -2);
+    }
+
+    _addScore(amount) {
+        const before = this.score;
+        this.score += amount;
+        this._checkExtraLife(before, this.score);
+    }
+
     _advanceLevel() {
         if (this.customMode || this.level.isTest) {
             this.state = 'VICTORY';
@@ -427,6 +488,8 @@ export class Game {
         }
 
         this._checkSpringBounce();
+
+        if (this.lifePopupTimer > 0) this.lifePopupTimer--;
 
         this.player.update(this.input, this.level.map, Sprites.RENDER_TILE, Sprites.RENDER_TILE, this.level.solidMap);
 
@@ -542,9 +605,7 @@ export class Game {
         }
 
         if (this.player.dead) {
-            this.audio.gameOver();
-            this._emitParticles(this.player.getCenterX(), this.player.getCenterY(), '#e74c3c', 20, 3, -3);
-            this.state = 'GAME_OVER';
+            this._loseLife();
         }
     }
 
@@ -637,13 +698,13 @@ export class Game {
         for (const t of tiles) {
             if (COIN_IDS.has(t.tileId)) {
                 this.level.map[t.row][t.col] = 0;
-                this.score += 10;
+                this._addScore(10);
                 this.audio.coin();
                 this._emitParticles(t.x + Sprites.RENDER_TILE / 2, t.y + Sprites.RENDER_TILE / 2, '#ffd700', 6, 2, -2);
             } else if (HEART_IDS.has(t.tileId)) {
                 this.level.map[t.row][t.col] = 0;
                 this.player.health = Math.min(this.player.maxHealth, this.player.health + 25);
-                this.score += 25;
+                this._addScore(25);
                 this.audio.heart();
                 this._emitParticles(t.x + Sprites.RENDER_TILE / 2, t.y + Sprites.RENDER_TILE / 2, '#ff6b9d', 8, 2, -3);
             } else if (HAZARD_IDS.has(t.tileId)) {
@@ -654,7 +715,7 @@ export class Game {
                 }
             } else if (EXIT_IDS.has(t.tileId)) {
                 if (this.boss && this.boss.alive) return;
-                this.score += 200;
+                this._addScore(200);
                 this.audio.levelComplete();
                 this._emitParticles(t.x + Sprites.RENDER_TILE / 2, t.y + Sprites.RENDER_TILE / 2, '#4caf50', 15, 3, -4);
                 if (this.bossDefeated) {
@@ -691,7 +752,7 @@ export class Game {
                 this.hitSet.add(i);
                 this._emitParticles(e.x + e.w / 2, e.y + e.h / 2, '#ff6b6b', 5, 2, -2);
                 if (!e.alive) {
-                    this.score += e.config.score;
+                    this._addScore(e.config.score);
                     this.audio.enemyDeath();
                     this._emitParticles(e.x + e.w / 2, e.y + e.h / 2, '#e74c3c', 12, 3, -3);
                 }
@@ -704,7 +765,7 @@ export class Game {
             this.audio.enemyDeath();
             if (!this.boss.alive) {
                 this.bossDefeated = true;
-                this.score += this.boss.config.score;
+                this._addScore(this.boss.config.score);
                 this._emitParticles(this.boss.x + this.boss.w / 2, this.boss.y + this.boss.h / 2, '#ffd700', 25, 4, -4);
             }
         }
@@ -791,19 +852,20 @@ export class Game {
             case 'BOSS_INTRO':
                 this._renderWorld();
                 this._renderParticles();
-                this.ui.renderHUD(this.player, this.score, this.level.name, this.levelIdx + 1, getTotalLevels(), this.boss, this.hasKey);
+                this.ui.renderHUD(this.player, this.score, this.level.name, this.levelIdx + 1, getTotalLevels(), this.boss, this.hasKey, this.currentLives);
                 if (this.state === 'PAUSED') this.ui.renderPause(this.score, this.level.name, this.pauseSel);
                 if (this.state === 'BOSS_INTRO') this.ui.renderBossIntro(this.boss, this.bossIntroTimer);
+                if (this.lifePopupTimer > 0) this.ui.renderLifePopup(this.lifePopupTimer);
                 break;
             case 'LEVEL_COMPLETE':
                 this._renderWorld();
                 this._renderParticles();
-                this.ui.renderHUD(this.player, this.score, this.level.name, this.levelIdx + 1, getTotalLevels(), this.boss, this.hasKey);
+                this.ui.renderHUD(this.player, this.score, this.level.name, this.levelIdx + 1, getTotalLevels(), this.boss, this.hasKey, this.currentLives);
                 this.ui.renderLevelComplete(this.level.name, this.score, 200);
                 break;
             case 'GAME_OVER':
                 this._renderWorld();
-                this.ui.renderGameOver(this.score, this.level.name, this.levelIdx);
+                this.ui.renderGameOver(this.score, this.level.name, this.levelIdx, this.currentLives);
                 break;
             case 'VICTORY':
                 this.ui.renderVictory(this.score);

@@ -205,5 +205,5 @@ export default {
       "patrolR": 89
     }
   ],
-  platforms: [{"tx":6,"ty":9,"moveX":0,"moveY":-4,"tiles":[{"tx":6,"ty":9,"id":76}]},{"tx":7,"ty":9,"moveX":0,"moveY":-4,"tiles":[{"tx":7,"ty":9,"id":78}]},{"tx":85,"ty":9,"moveX":7,"moveY":2,"tiles":[{"tx":85,"ty":9,"id":181}]},{"tx":86,"ty":9,"moveX":7,"moveY":2,"tiles":[{"tx":86,"ty":9,"id":183}]}],
+  platforms: [{"tx":6,"ty":9,"moveX":0,"moveY":-4,"tiles":[{"tx":6,"ty":9,"id":76}]},{"tx":7,"ty":9,"moveX":0,"moveY":-4,"tiles":[{"tx":7,"ty":9,"id":78}]},{"tx":85,"ty":9,"moveX":7,"moveY":0,"tiles":[{"tx":85,"ty":9,"id":181}]},{"tx":86,"ty":9,"moveX":7,"moveY":0,"tiles":[{"tx":86,"ty":9,"id":183}]}],
 };

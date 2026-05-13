@@ -1,4 +1,4 @@
-import { drawTile } from './renderer.js';
+import { drawTile, drawExtra, hasExtra } from './renderer.js';
 
 export const INTRO_LINES = [
     'The kingdom has fallen silent.',
@@ -185,7 +185,7 @@ export class UI {
         ctx.restore();
     }
 
-    renderHUD(player, score, levelName, levelNum, totalLevels, boss, hasKey) {
+    renderHUD(player, score, levelName, levelNum, totalLevels, boss, hasKey, currentLives) {
         if (!player) return;
         const ctx = this.ctx;
         const pad = 12;
@@ -193,21 +193,13 @@ export class UI {
         const hpPct = Math.max(0, player.health / player.maxHealth);
         const fullHearts = Math.floor(hpPct * maxHearts);
         const hasHalf = (hpPct * maxHearts) - fullHearts >= 0.5;
+        const lives = currentLives !== undefined ? currentLives : 3;
 
         ctx.save();
-        ctx.shadowColor = 'rgba(0,0,0,0.6)';
-        ctx.shadowBlur = 8;
-        this._gradientBg(pad - 2, pad - 2, maxHearts * 22 + 24, 40, 'rgba(8,6,18,0.82)', 'rgba(12,8,24,0.75)');
-        ctx.shadowBlur = 0;
-        ctx.strokeStyle = C.borderLight;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.roundRect(pad - 1, pad - 1, maxHearts * 22 + 24, 40, 6);
-        ctx.stroke();
-        ctx.restore();
-
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 4;
         for (let i = 0; i < maxHearts; i++) {
-            const hx = pad + 10 + i * 22;
+            const hx = pad + 8 + i * 22;
             const hy = pad + 8;
             if (i < fullHearts) {
                 drawTile(ctx, 72, hx, hy);
@@ -218,21 +210,19 @@ export class UI {
             }
         }
 
-        const infoX = this.w - pad;
-        ctx.save();
-        ctx.shadowColor = 'rgba(0,0,0,0.6)';
-        ctx.shadowBlur = 8;
-        this._gradientBg(infoX - 222, pad - 2, 224, 54, 'rgba(8,6,18,0.82)', 'rgba(12,8,24,0.75)');
-        ctx.shadowBlur = 0;
-        ctx.strokeStyle = C.borderLight;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.roundRect(infoX - 221, pad - 1, 222, 54, 6);
-        ctx.stroke();
+        const livesY = pad + 50;
+        for (let i = 0; i < lives; i++) {
+            if (hasExtra('knight_idle')) drawExtra(ctx, 'knight_idle', pad + 4 + i * 28, livesY, 26);
+        }
         ctx.restore();
 
+        const infoX = this.w - pad;
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 4;
         this._text(`SCORE: ${score}`, infoX - 110, pad + 14, this.fontSmall, C.gold);
         this._text(`${levelName}`, infoX - 110, pad + 36, this.fontSmall, C.cyan);
+        ctx.restore();
 
         if (boss && boss.alive) {
             this.menuBlink += 0.04;
@@ -554,7 +544,7 @@ export class UI {
         this.ctx.globalAlpha = 1;
     }
 
-    renderGameOver(score, levelName, levelNum) {
+    renderGameOver(score, levelName, levelNum, currentLives) {
         const cx = this.w / 2, cy = this.h / 2;
         const pw = 420, ph = 240;
         const px = cx - pw / 2, py = cy - ph / 2;
@@ -697,6 +687,32 @@ export class UI {
     renderLoading() {
         this._gradientBg(0, 0, this.w, this.h, '#080810', '#0e0818', true);
         this._glowText('Loading...', this.w / 2, this.h / 2, this.fontLarge, '#fff', 'rgba(200,180,255,0.3)');
+    }
+
+    renderLifePopup(timer) {
+        const ctx = this.ctx;
+        const cx = this.w / 2;
+        const maxTimer = 120;
+        const t = 1 - timer / maxTimer;
+        let alpha = 1;
+        if (t < 0.1) alpha = t / 0.1;
+        else if (t > 0.7) alpha = 1 - (t - 0.7) / 0.3;
+        const y = this.h * 0.3 - t * 20;
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.shadowColor = 'rgba(76,175,80,0.6)';
+        ctx.shadowBlur = 15;
+        this._gradientBg(cx - 80, y - 18, 160, 36, 'rgba(10,30,10,0.9)', 'rgba(20,50,20,0.85)');
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = '#4caf50';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(cx - 79, y - 17, 158, 34, 6);
+        ctx.stroke();
+        if (hasExtra('knight_idle')) drawExtra(ctx, 'knight_idle', cx - 65, y - 10, 22);
+        this._text('+1 LIFE!', cx + 10, y + 4, '12px "Press Start 2P"', '#4caf50');
+        ctx.restore();
     }
 
     renderBossIntro(boss, timer) {

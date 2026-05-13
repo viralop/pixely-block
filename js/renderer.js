@@ -155,6 +155,21 @@ export function drawChar(ctx, charId, screenX, screenY, flipH = false) {
     }
 }
 
+export function drawCharSmall(ctx, charId, screenX, screenY, size) {
+    if (charId <= 0 || !sheets.characters) return;
+    const index = charId - 1;
+    const col = index % CHAR_COLS;
+    const row = Math.floor(index / CHAR_COLS);
+    const sx = col * (CHAR_SIZE + 1);
+    const sy = row * (CHAR_SIZE + 1);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(
+        sheets.characters,
+        sx, sy, CHAR_SIZE, CHAR_SIZE,
+        Math.round(screenX), Math.round(screenY), size, size
+    );
+}
+
 export function drawBgParallax(ctx, canvasW, canvasH, cameraX, cameraY, bgColor) {
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, canvasW, canvasH);
