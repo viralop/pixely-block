@@ -29,6 +29,7 @@ function _buildLevel(data) {
         bgColor: data.bgColor || '#1a2a1a', spawn, exit, map,
         solidMap: data.solidMap ? data.solidMap.map(r => r.slice()) : null,
         entities: (data.entities || []).map(e => ({...e})),
+        platforms: (data.platforms || []).map(p => ({...p, tiles: (p.tiles || []).map(t => ({...t}))})),
         decorations: []
     };
 }
