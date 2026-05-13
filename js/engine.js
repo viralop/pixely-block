@@ -495,12 +495,22 @@ export class Game {
             );
         });
 
-        if (this.boss && this.boss.alive) {
-            this.boss.update(
-                this.level.map, Sprites.RENDER_TILE, Sprites.RENDER_TILE,
-                this.player.getCenterX(), this.player.getCenterY(), !this.player.dead,
-                this.level.solidMap
-            );
+            if (this.boss && this.boss.alive) {
+                this.boss.update(
+                    this.level.map, Sprites.RENDER_TILE, Sprites.RENDER_TILE,
+                    this.player.getCenterX(), this.player.getCenterY(), !this.player.dead,
+                    this.level.solidMap
+                );
+
+                const bCols = getTilesInRegion(this.level.map, this.boss, Sprites.RENDER_TILE, Sprites.RENDER_TILE);
+                for (const t of bCols) {
+                    if (HAZARD_IDS.has(t.tileId)) {
+                        this.boss.alive = false;
+                        this.boss.hp = 0;
+                        this._emitParticles(this.boss.x + this.boss.w / 2, this.boss.y + this.boss.h / 2, '#ff4444', 20, 3, -3);
+                        break;
+                    }
+                }
 
             if (!this.bossArenaActive && this.player.x + this.player.w > this.bossArenaLeft) {
                 this.bossArenaActive = true;
