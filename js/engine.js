@@ -29,6 +29,7 @@ export class Game {
         this.level = null;
         this.player = null;
         this.enemies = [];
+        this.movingPlatforms = [];
         this.boss = null;
         this.bossDefeated = false;
         this.camX = 0;
@@ -324,6 +325,7 @@ export class Game {
         this.particles = [];
         this.camX = 0;
         this.camY = 0;
+        this.movingPlatforms = (level.platforms || []).map(p => this._createMovingPlatform(p));
         this.state = this.boss ? 'BOSS_INTRO' : 'PLAYING';
     }
 
@@ -374,7 +376,33 @@ export class Game {
         this.particles = [];
         this.camX = 0;
         this.camY = 0;
+
+        this.movingPlatforms = (level.platforms || []).map(p => this._createMovingPlatform(p));
+
         this.state = this.boss ? 'BOSS_INTRO' : 'PLAYING';
+    }
+
+    _createMovingPlatform(p) {
+        const RT = Sprites.RENDER_TILE;
+        const tiles = p.tiles || [];
+        const minX = tiles.length > 0 ? Math.min(...tiles.map(t => t.tx)) : p.tx;
+        const minY = tiles.length > 0 ? Math.min(...tiles.map(t => t.ty)) : p.ty;
+        return {
+            tiles: tiles,
+            baseX: minX * RT,
+            baseY: minY * RT,
+            x: minX * RT,
+            y: minY * RT,
+            moveX: (p.moveX || 0) * RT,
+            moveY: (p.moveY || 0) * RT,
+            speed: 1,
+            t: 0,
+            dir: 1,
+            prevX: minX * RT,
+            prevY: minY * RT,
+            w: (tiles.length > 0 ? (Math.max(...tiles.map(t => t.tx)) - minX + 1) : 1) * RT,
+            h: (tiles.length > 0 ? (Math.max(...tiles.map(t => t.ty)) - minY + 1) : 1) * RT
+        };
     }
 
     _advanceLevel() {
@@ -401,6 +429,9 @@ export class Game {
         this._checkSpringBounce();
 
         this.player.update(this.input, this.level.map, Sprites.RENDER_TILE, Sprites.RENDER_TILE, this.level.solidMap);
+
+        this._updatePlatforms();
+        this._platformCollision();
 
         if (this.player.onGround) {
             const feetCol = Math.floor((this.player.x + this.player.w / 2) / Sprites.RENDER_TILE);
@@ -522,6 +553,66 @@ export class Game {
                 this.triggeredSprings.set(`${feetRow},${feetCol}`, 12);
                 this.audio.spring();
                 this._emitParticles(p.getCenterX(), springTop, '#ff6', 8, 2, -3);
+            }
+        }
+    }
+
+    _updatePlatforms() {
+        const RT = Sprites.RENDER_TILE;
+        for (const mp of this.movingPlatforms) {
+            mp.prevX = mp.x;
+            mp.prevY = mp.y;
+            mp.t += 0.008 * mp.speed * mp.dir;
+            if (mp.t >= 1) { mp.t = 1; mp.dir = -1; }
+            if (mp.t <= 0) { mp.t = 0; mp.dir = 1; }
+            const eased = mp.t < 0.5 ? 2 * mp.t * mp.t : 1 - Math.pow(-2 * mp.t + 2, 2) / 2;
+            mp.x = mp.baseX + mp.moveX * eased;
+            mp.y = mp.baseY + mp.moveY * eased;
+            const dx = mp.x - mp.prevX;
+            const dy = mp.y - mp.prevY;
+            const p = this.player;
+            if (dx === 0 && dy === 0) continue;
+            const platTop = mp.y;
+            const platBot = mp.y + mp.h;
+            const platLeft = mp.x;
+            const platRight = mp.x + mp.w;
+            const pBot = p.y + p.h;
+            const pCenterX = p.x + p.w / 2;
+            if (pBot >= platTop - 4 && pBot <= platTop + 8 &&
+                pCenterX >= platLeft - 2 && pCenterX <= platRight + 2 &&
+                p.vy >= 0 && dy <= 0) {
+                p.x += dx;
+                p.y += dy;
+            }
+        }
+    }
+
+    _platformCollision() {
+        const p = this.player;
+        for (const mp of this.movingPlatforms) {
+            if (mp.tiles.length === 0) continue;
+            const RT = Sprites.RENDER_TILE;
+            const pBot = p.y + p.h;
+            const pRight = p.x + p.w;
+            const pCenterX = p.x + p.w / 2;
+            if (pRight > mp.x + 2 && p.x < mp.x + mp.w - 2) {
+                if (pBot >= mp.y && pBot <= mp.y + 10 && p.vy >= 0) {
+                    p.y = mp.y - p.h;
+                    p.vy = 0;
+                    p.onGround = true;
+                }
+            }
+            for (const t of mp.tiles) {
+                const tx = mp.x + (t.tx - Math.min(...mp.tiles.map(tt => tt.tx))) * RT;
+                const ty = mp.y + (t.ty - Math.min(...mp.tiles.map(tt => tt.ty))) * RT;
+                if (pRight > tx && p.x < tx + RT && p.y + p.h > ty + 4 && p.y < ty + RT) {
+                    const overlapL = pRight - tx;
+                    const overlapR = (tx + RT) - p.x;
+                    const overlapT = (p.y + p.h) - ty;
+                    const overlapB = (ty + RT) - p.y;
+                    if (pCenterX < tx + RT / 2 && overlapL < RT * 0.5) { p.x = tx - p.w; p.vx = 0; }
+                    else if (overlapR < RT * 0.5) { p.x = tx + RT; p.vx = 0; }
+                }
             }
         }
     }
@@ -765,6 +856,17 @@ export class Game {
         this.enemies.forEach(e => e.render(ctx, cx, cy, Sprites.drawChar));
         if (this.boss) this.boss.render(ctx, cx, cy);
         this.player.render(ctx, cx, cy, Sprites.drawChar);
+
+        for (const mp of this.movingPlatforms) {
+            for (const t of mp.tiles) {
+                const tx = t.tx * Sprites.RENDER_TILE - mp.baseX + mp.x - cx;
+                const ty = t.ty * Sprites.RENDER_TILE - mp.baseY + mp.y - cy;
+                if (tx > -Sprites.RENDER_TILE && tx < this.W + Sprites.RENDER_TILE &&
+                    ty > -Sprites.RENDER_TILE && ty < this.H + Sprites.RENDER_TILE) {
+                    Sprites.drawTile(ctx, t.id, tx, ty);
+                }
+            }
+        }
     }
 
     _renderParticles() {

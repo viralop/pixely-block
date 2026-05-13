@@ -240,6 +240,7 @@
       <button class="tool-btn" id="btn-erase" title="Erase tiles">Erase</button>
       <button class="tool-btn" id="btn-entity" title="Place enemies/entities">Entity</button>
       <button class="tool-btn" id="btn-action" title="Place start/end points">Action</button>
+      <button class="tool-btn" id="btn-platform" title="Define moving platforms (181-183)">Platform</button>
       <div id="toolbar-sep"></div>
       <span id="toolbar-mode">Mode: Build (solid)</span>
       <div id="entity-pick" style="display:none;margin-left:8px;gap:4px;align-items:center;">
@@ -258,6 +259,11 @@
       <div id="action-pick" style="display:none;margin-left:8px;gap:4px;align-items:center;">
         <button class="act-btn sel" data-type="start" style="background:#1a3a1a;border:2px solid #4caf50;color:#4caf50;">Start</button>
         <button class="act-btn" data-type="end" style="background:#3a1a1a;border:2px solid #e94560;color:#e94560;">End</button>
+      </div>
+      <div id="platform-pick" style="display:none;margin-left:8px;gap:6px;align-items:center;font-size:11px;color:#7a6a8a;">
+        <span style="color:#5ee8d0;font-weight:bold;">Moving Platforms</span>
+        <span>Click any tile + drag to set movement. Right-click to remove.</span>
+        <span id="platform-count" style="color:#e94560;">Platforms: 0</span>
       </div>
     </div>
     <div id="canvas-row">
@@ -325,6 +331,9 @@ let panX0 = 0, panY0 = 0, camX0 = 0, camY0 = 0;
 let editingName = '';
 let editingLevelNum = null;
 let editMode = 'build';
+let platforms = [];
+let selPlatform = -1;
+let platformDragStart = null;
 
 const SOLID_TILES = new Set([33,52,53,169,170,171,109,110,111,49,50,51,60,80,100,76,78,181,182,183]);
 const DEFAULT_BUILD = 49;
@@ -376,7 +385,8 @@ async function loadFolderLevels() {
       const resp = await fetch('js/levels/level-' + i + '.js?t=' + Date.now());
       if (!resp.ok) continue;
       const src = await resp.text();
-      const mod = await import('data:text/javascript;base64,' + btoa(src));
+      const encoded = encodeURIComponent(src);
+      const mod = await import('data:text/javascript,' + encoded);
       if (mod && mod.default && mod.default.name && mod.default.map) {
         folderLevels.push({ num: i, data: mod.default });
       }
@@ -391,7 +401,7 @@ function buildPicker() {
   const newRow = document.createElement('div');
   newRow.className = 'pick-row pick-new';
   newRow.innerHTML = '<span class="pick-icon">+</span><span class="pick-name">New Empty Level</span><span class="pick-size"></span>';
-  newRow.onclick = () => startEditor('My Level', 45, 10, mk(45, 10), [], mkBool(45, 10), mkBool(45, 10), null, null);
+  newRow.onclick = () => startEditor('My Level', 45, 10, mk(45, 10), [], mkBool(45, 10), mkBool(45, 10), null, null, []);
   list.appendChild(newRow);
 
   for (const fl of folderLevels) {
@@ -407,12 +417,14 @@ function buildPicker() {
     const paintData = mkBool(l.w, l.h);
     const entData = (l.entities || []).filter(e => ENEMY_DEFS[e.type]).map(e => ({...e}));
     const apData = { start: l.spawn ? {...l.spawn} : null, end: l.exit ? {...l.exit} : null };
-    row.onclick = () => startEditor(l.name, l.w, l.h, mapData, entData, solidData, paintData, apData, fl.num);
+    const platData = (l.platforms || []).map(p => ({...p, tiles: (p.tiles || []).map(t => ({...t}))}));
+    row.onclick = () => startEditor(l.name, l.w, l.h, mapData, entData, solidData, paintData, apData, fl.num, platData);
     list.appendChild(row);
   }
 }
 
-function startEditor(name, w, h, mapData, entData, sData, pData, apData, levelNum) {
+function startEditor(name, w, h, mapData, entData, sData, pData, apData, levelNum, platData) {
+  document.getElementById('editor-title').textContent = 'Editing: ' + name;
   editingName = name;
   editingLevelNum = levelNum || null;
   levelW = w; levelH = h;
@@ -420,6 +432,7 @@ function startEditor(name, w, h, mapData, entData, sData, pData, apData, levelNu
   solidMap = sData || mkBool(w, h);
   paintMap = pData || mkBool(w, h);
   entities = entData || [];
+  platforms = platData || [];
   actionPoints = { start: null, end: null };
   if (apData && apData.start) actionPoints.start = {...apData.start};
   if (apData && apData.end) actionPoints.end = {...apData.end};
@@ -633,8 +646,23 @@ cv.addEventListener('mousedown', (e) => {
     return;
   }
 
+  if (editMode === 'platform') {
+    if (e.button === 2) {
+      const idx = platforms.findIndex(p => p.tiles.some(t => t.tx === gx && t.ty === gy));
+      if (idx >= 0) { hist.snap(); platforms.splice(idx, 1); updPlatCount(); }
+      return;
+    }
+    if (e.button === 0 && map[gy][gx] > 0) {
+      platformDragStart = { gx, gy };
+    }
+    return;
+  }
+
   if (e.button === 2 || editMode === 'erase') {
-    hist.snap(); map[gy][gx] = 0; solidMap[gy][gx] = false; paintMap[gy][gx] = false; painting = true; updCount();
+    hist.snap(); map[gy][gx] = 0; solidMap[gy][gx] = false; paintMap[gy][gx] = false;
+    platforms = platforms.filter(p => !p.tiles.some(t => t.tx === gx && t.ty === gy));
+    updPlatCount();
+    painting = true; updCount();
     return;
   }
   if (e.button === 0) {
@@ -652,13 +680,45 @@ cv.addEventListener('mousemove', (e) => {
     return;
   }
   if (painting && mgx >= 0 && mgx < levelW && mgy >= 0 && mgy < levelH) {
-    if (editMode === 'erase') { if (map[mgy][mgx] !== 0) { map[mgy][mgx] = 0; solidMap[mgy][mgx] = false; paintMap[mgy][mgx] = false; updCount(); } }
+    if (editMode === 'erase') { if (map[mgy][mgx] !== 0) { map[mgy][mgx] = 0; solidMap[mgy][mgx] = false; paintMap[mgy][mgx] = false; platforms = platforms.filter(p => !p.tiles.some(t => t.tx === mgx && t.ty === mgy)); updPlatCount(); updCount(); } }
     else { const pid = getPlaceId(); if (map[mgy][mgx] !== pid) { map[mgy][mgx] = pid; solidMap[mgy][mgx] = editMode === 'build'; paintMap[mgy][mgx] = editMode === 'paint'; updCount(); } }
   }
   document.getElementById('st-pos').textContent = 'Grid: ' + mgx + ', ' + mgy;
 });
 
-cv.addEventListener('mouseup', () => { panning = false; painting = false; draggingAction = null; });
+cv.addEventListener('mouseup', (e) => {
+  if (editMode === 'platform' && platformDragStart && e.button === 0) {
+    const rect = cv.getBoundingClientRect();
+    const w = s2w(e.clientX - rect.left, e.clientY - rect.top);
+    const endGx = Math.floor(w.x / RT), endGy = Math.floor(w.y / RT);
+    const s = platformDragStart;
+    const startTile = map[s.gy][s.gx];
+    if (startTile <= 0) { platformDragStart = null; panning = false; painting = false; draggingAction = null; return; }
+    const tiles = [];
+    const visited = new Set();
+    const stack = [[s.gx, s.gy]];
+    while (stack.length > 0) {
+      const [cx2, cy2] = stack.pop();
+      const key = cy2 * 1000 + cx2;
+      if (visited.has(key)) continue;
+      if (cx2 < 0 || cx2 >= levelW || cy2 < 0 || cy2 >= levelH) continue;
+      if (map[cy2][cx2] !== startTile) continue;
+      visited.add(key);
+      tiles.push({ tx: cx2, ty: cy2, id: startTile });
+      stack.push([cx2 + 1, cy2], [cx2 - 1, cy2], [cx2, cy2 + 1], [cx2, cy2 - 1]);
+    }
+    const moveX = endGx - s.gx;
+    const moveY = endGy - s.gy;
+    if (tiles.length > 0 && (moveX !== 0 || moveY !== 0)) {
+      hist.snap();
+      for (const t of tiles) { map[t.ty][t.tx] = 0; solidMap[t.ty][t.tx] = false; paintMap[t.ty][t.tx] = false; }
+      platforms.push({ tx: s.gx, ty: s.gy, moveX, moveY, tiles });
+      updPlatCount();
+    }
+    platformDragStart = null;
+  }
+  panning = false; painting = false; draggingAction = null;
+});
 cv.addEventListener('mouseleave', () => { panning = false; painting = false; draggingAction = null; });
 cv.addEventListener('contextmenu', e => e.preventDefault());
 cv.addEventListener('wheel', (e) => { e.preventDefault(); const s = RT; if (e.shiftKey) { camY += e.deltaY > 0 ? s : -s; syncVScroll(); } else { camX += e.deltaY > 0 ? s : -s; syncHScroll(); } }, { passive: false });
@@ -797,6 +857,61 @@ function render() {
     cx.textAlign = 'start';
   }
 
+  for (const p of platforms) {
+    cx.strokeStyle = '#5ee8d0';
+    cx.lineWidth = 2;
+    cx.setLineDash([6, 4]);
+    for (const t of p.tiles) {
+      cx.strokeRect(t.tx * RT, t.ty * RT, RT, RT);
+    }
+    cx.setLineDash([]);
+    if (p.moveX !== 0 || p.moveY !== 0) {
+      const dx = p.moveX * RT, dy = p.moveY * RT;
+      cx.strokeStyle = 'rgba(94,232,208,0.4)';
+      cx.lineWidth = 2;
+      cx.setLineDash([8, 6]);
+      for (const t of p.tiles) {
+        cx.beginPath();
+        cx.moveTo(t.tx * RT + RT / 2, t.ty * RT + RT / 2);
+        cx.lineTo(t.tx * RT + RT / 2 + dx, t.ty * RT + RT / 2 + dy);
+        cx.stroke();
+        cx.fillStyle = 'rgba(94,232,208,0.3)';
+        cx.fillRect(t.tx * RT + dx, t.ty * RT + dy, RT, RT);
+      }
+      cx.setLineDash([]);
+    }
+    cx.fillStyle = '#5ee8d0';
+    cx.font = 'bold 9px sans-serif';
+    cx.textAlign = 'center';
+    cx.fillText('\u2194', (p.tiles[0] ? p.tiles[0].tx : p.tx) * RT + RT / 2, (p.tiles[0] ? p.tiles[0].ty : p.ty) * RT - 4);
+    cx.textAlign = 'start';
+  }
+
+  if (platformDragStart && editMode === 'platform') {
+    const sx = platformDragStart.gx * RT, sy = platformDragStart.gy * RT;
+    cx.fillStyle = 'rgba(94,232,208,0.25)';
+    cx.fillRect(sx, sy, RT, RT);
+    cx.strokeStyle = '#5ee8d0'; cx.lineWidth = 2;
+    cx.strokeRect(sx, sy, RT, RT);
+    if (mgx >= 0 && mgy >= 0) {
+      const ex = mgx * RT, ey = mgy * RT;
+      cx.strokeStyle = 'rgba(94,232,208,0.7)'; cx.lineWidth = 3;
+      cx.setLineDash([8, 6]);
+      cx.beginPath();
+      cx.moveTo(sx + RT / 2, sy + RT / 2);
+      cx.lineTo(ex + RT / 2, ey + RT / 2);
+      cx.stroke();
+      cx.fillStyle = 'rgba(94,232,208,0.2)';
+      cx.fillRect(ex, ey, RT, RT);
+      cx.strokeStyle = '#5ee8d0'; cx.lineWidth = 2;
+      cx.strokeRect(ex, ey, RT, RT);
+      cx.setLineDash([]);
+      cx.fillStyle = '#5ee8d0'; cx.font = 'bold 10px sans-serif'; cx.textAlign = 'center';
+      cx.fillText('\u2192', sx + RT / 2, sy - 6);
+      cx.textAlign = 'start';
+    }
+  }
+
   if (!dragging && mgx >= 0 && mgx < levelW && mgy >= 0 && mgy < levelH) {
     if (editMode === 'entity') {
       const def = ENEMY_DEFS[selEntityType];
@@ -853,6 +968,7 @@ function _levelToJS(l) {
   for (const row of sm) lines.push('    [' + row.map(v => v ? 'true' : 'false').join(',') + '],');
   lines.push('  ],');
   lines.push('  entities: ' + JSON.stringify(ent, null, 2).split('\n').map(ln => '  ' + ln).join('\n') + ',');
+  lines.push('  platforms: ' + JSON.stringify(l.platforms || []) + ',');
   lines.push('}');
   return lines.join('\n');
 }
@@ -878,7 +994,8 @@ function saveCurrentLevel() {
     theme: 'grass',
     spawn: actionPoints.start || { tx: 1, ty: levelH - 2 },
     exit: actionPoints.end || { tx: levelW - 2, ty: levelH - 2 },
-    map, solidMap, entities: entities.map(e => ({...e}))
+    map, solidMap, entities: entities.map(e => ({...e})),
+    platforms: platforms.map(p => ({ tx: p.tx, ty: p.ty, moveX: p.moveX, moveY: p.moveY, tiles: p.tiles }))
   };
   if (editingLevelNum) {
     _saveLevelFile(editingLevelNum, entry);
@@ -936,6 +1053,7 @@ function _downloadLevelFile(num, data) {
 
 function toast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 2000); }
 function updCount() { let n = 0; for (const r of map) for (const t of r) if (t) n++; document.getElementById('st-count').textContent = 'Placed: ' + n; document.getElementById('st-ents').textContent = 'Enemies: ' + entities.length; }
+function updPlatCount() { const el = document.getElementById('platform-count'); if (el) el.textContent = 'Platforms: ' + platforms.length; }
 
 function setMode(mode) {
   editMode = mode;
@@ -944,11 +1062,14 @@ function setMode(mode) {
   document.getElementById('btn-erase').className = 'tool-btn' + (mode === 'erase' ? ' active-erase' : '');
   document.getElementById('btn-entity').className = 'tool-btn' + (mode === 'entity' ? ' active-entity' : '');
   document.getElementById('btn-action').className = 'tool-btn' + (mode === 'action' ? ' active-action' : '');
-  const labels = { build: 'Build (solid)', paint: 'Paint (decoration)', erase: 'Erase', entity: 'Place Enemies', action: 'Start / End' };
+  document.getElementById('btn-platform').className = 'tool-btn' + (mode === 'platform' ? ' active-entity' : '');
+  const labels = { build: 'Build (solid)', paint: 'Paint (decoration)', erase: 'Erase', entity: 'Place Enemies', action: 'Start / End', platform: 'Moving Platform' };
   document.getElementById('toolbar-mode').textContent = 'Mode: ' + labels[mode];
   document.getElementById('entity-pick').style.display = mode === 'entity' ? 'flex' : 'none';
   document.getElementById('action-pick').style.display = mode === 'action' ? 'flex' : 'none';
-  cv.style.cursor = (mode === 'erase' || mode === 'entity' || mode === 'action') ? 'crosshair' : 'default';
+  document.getElementById('platform-pick').style.display = mode === 'platform' ? 'flex' : 'none';
+  cv.style.cursor = (mode === 'erase' || mode === 'entity' || mode === 'action' || mode === 'platform') ? 'crosshair' : 'default';
+  selPlatform = -1;
   if (mode === 'build' && !SOLID_TILES.has(selId)) selectTile(DEFAULT_BUILD);
   else if (mode === 'paint' && SOLID_TILES.has(selId)) selectTile(DEFAULT_PAINT);
 }
@@ -959,6 +1080,7 @@ function setupUI() {
   document.getElementById('btn-erase').onclick = () => setMode('erase');
   document.getElementById('btn-entity').onclick = () => setMode('entity');
   document.getElementById('btn-action').onclick = () => setMode('action');
+  document.getElementById('btn-platform').onclick = () => setMode('platform');
   document.querySelectorAll('.ent-btn').forEach(b => {
     b.onclick = () => {
       selEntityType = b.dataset.type;
@@ -986,7 +1108,8 @@ function setupUI() {
       theme: 'grass',
       spawn: actionPoints.start || { tx: 1, ty: levelH - 2 },
       exit: actionPoints.end || { tx: levelW - 2, ty: levelH - 2 },
-      map, solidMap, entities: entities.map(e => ({...e}))
+      map, solidMap, entities: entities.map(e => ({...e})),
+      platforms: platforms.map(p => ({ tx: p.tx, ty: p.ty, moveX: p.moveX, moveY: p.moveY, tiles: p.tiles }))
     };
     localStorage.setItem('testLevel', JSON.stringify(data));
     window.open('index.html?test=1', '_blank');
