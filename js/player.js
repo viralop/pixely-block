@@ -117,7 +117,7 @@ export class Player {
         } else { this.animTimer = 0; this.animFrame = 0; }
         if (Math.abs(this.vx) < 0.5 && this.onGround) {
             this.idleAnimTimer++;
-            if (this.idleAnimTimer >= 8) { this.idleAnimTimer = 0; this.idleAnimFrame = (this.idleAnimFrame + 1) % 11; }
+            if (this.idleAnimTimer >= 20) { this.idleAnimTimer = 0; this.idleAnimFrame = (this.idleAnimFrame + 1) % 11; }
         }
         this._checkGrabLadder(input, solidMap, tileW, tileH);
         this._checkGrabRope(input, solidMap, tileW, tileH);
