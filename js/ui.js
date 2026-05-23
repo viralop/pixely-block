@@ -282,46 +282,40 @@ export class UI {
         const cx = W / 2;
         const RT = RENDER_TILE;
 
+        // Draw the visual background level map
         this._drawMenuLevelBg(W, H, RT);
 
+        // Dark transparent overlay for the whole screen
         ctx.save();
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
         ctx.fillRect(0, 0, W, H);
         ctx.restore();
 
         const footerH = 60;
 
-        ctx.save();
-        ctx.font = 'bold 40px "Press Start 2P"';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        const titleY = 52;
-        ctx.fillStyle = '#000';
-        ctx.fillText('PIXELY BLOCK', cx + 5, titleY + 5);
-        ctx.fillStyle = '#6b3a10';
-        ctx.fillText('PIXELY BLOCK', cx + 3, titleY + 3);
-        ctx.fillStyle = '#ad6f13';
-        ctx.fillText('PIXELY BLOCK', cx + 2, titleY + 2);
-        ctx.fillStyle = '#f7d038';
-        ctx.fillText('PIXELY BLOCK', cx, titleY);
-        ctx.restore();
+        // Draw 3D logo "PIXELY BLOCK"
+        this._draw3DText('PIXELY', cx, 46, 32);
+        this._draw3DText('BLOCK', cx, 86, 32);
 
+        // Subtitles with shadows
         ctx.save();
         ctx.font = '9px "Press Start 2P"';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#000';
-        ctx.fillText("A Knight's Journey to Save the Queen", cx + 1, 82);
-        ctx.fillStyle = '#fff';
-        ctx.fillText("A Knight's Journey to Save the Queen", cx, 81);
-        ctx.fillStyle = '#000';
-        ctx.fillText('Defeat the bosses every 5 levels!', cx + 1, 98);
+        
+        ctx.fillStyle = '#000000';
+        ctx.fillText("A Knight's Journey to Save the Queen", cx + 1, 126);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText("A Knight's Journey to Save the Queen", cx, 125);
+        
+        ctx.fillStyle = '#000000';
+        ctx.fillText('Defeat the bosses every 5 levels!', cx + 1, 142);
         ctx.fillStyle = '#e2ecf7';
-        ctx.fillText('Defeat the bosses every 5 levels!', cx, 97);
+        ctx.fillText('Defeat the bosses every 5 levels!', cx, 141);
         ctx.restore();
 
-        const contentTop = 118;
-        const contentH = H - footerH - contentTop - 10;
+        // Spacings and positions
+        const contentTop = 160;
         const leftW = 220;
         const rightW = 320;
         const gap = 30;
@@ -329,28 +323,98 @@ export class UI {
         const leftX = cx - totalW / 2;
         const rightX = leftX + leftW + gap;
 
-        this._drawMenuCharPanel(leftX, contentTop, leftW, contentH);
+        // Draw center-left grassy platform mound and the active character
+        this._drawMenuCharPanel(leftX, contentTop, leftW);
 
+        // Draw wooden menu board
         const boardX = rightX;
-        const boardY = contentTop + 5;
+        const boardY = contentTop + 16;
         const boardW = rightW;
-        const boardH = contentH - 10;
+        const boardH = 224;
 
-        ctx.fillStyle = '#4a301f';
-        ctx.fillRect(boardX, boardY, boardW, boardH);
+        ctx.save();
+        // Left post shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillRect(boardX + 4, boardY - 6 + 4, 14, 230);
+        // Right post shadow
+        ctx.fillRect(boardX + boardW - 14 + 4, boardY - 6 + 4, 14, 230);
+        
+        // Left post fill
+        ctx.fillStyle = '#5d3a1a'; // Medium wood brown
+        ctx.fillRect(boardX, boardY - 6, 14, 230);
+        ctx.strokeStyle = '#2b1b10'; // Dark border
+        ctx.lineWidth = 3;
+        ctx.strokeRect(boardX, boardY - 6, 14, 230);
+        
+        // Right post fill
+        ctx.fillStyle = '#5d3a1a';
+        ctx.fillRect(boardX + boardW - 14, boardY - 6, 14, 230);
+        ctx.strokeRect(boardX + boardW - 14, boardY - 6, 14, 230);
+        
+        // Top log
+        ctx.fillStyle = '#6e4424';
+        ctx.fillRect(boardX - 8, boardY - 6, boardW + 16, 16);
+        ctx.strokeRect(boardX - 8, boardY - 6, boardW + 16, 16);
+        
+        // Bottom log
+        ctx.fillStyle = '#6e4424';
+        ctx.fillRect(boardX - 8, boardY + boardH - 24, boardW + 16, 16);
+        ctx.strokeRect(boardX - 8, boardY + boardH - 24, boardW + 16, 16);
+        
+        // Inner board fill
+        ctx.fillStyle = '#3a2214'; // Dark wood interior
+        ctx.fillRect(boardX + 14, boardY + 10, boardW - 28, boardH - 34);
         ctx.strokeStyle = '#2b1b10';
-        ctx.lineWidth = 6;
-        ctx.strokeRect(boardX, boardY, boardW, boardH);
-        ctx.strokeStyle = '#6b4a1e';
         ctx.lineWidth = 2;
-        ctx.strokeRect(boardX + 8, boardY + 8, boardW - 16, boardH - 16);
+        ctx.strokeRect(boardX + 14, boardY + 10, boardW - 28, boardH - 34);
+        
+        // Wooden grain highlights
+        ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(boardX + 14, boardY + 40); ctx.lineTo(boardX + boardW - 14, boardY + 40);
+        ctx.moveTo(boardX + 14, boardY + 80); ctx.lineTo(boardX + boardW - 14, boardY + 80);
+        ctx.moveTo(boardX + 14, boardY + 120); ctx.lineTo(boardX + boardW - 14, boardY + 120);
+        ctx.moveTo(boardX + 14, boardY + 160); ctx.lineTo(boardX + boardW - 14, boardY + 160);
+        ctx.stroke();
+        
+        // Draw the small wooden sign hanging on the bottom-left of the board
+        ctx.fillStyle = '#5d3a1a';
+        ctx.fillRect(boardX - 16, boardY + boardH - 50, 32, 16);
+        ctx.strokeStyle = '#2b1b10';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(boardX - 16, boardY + boardH - 50, 32, 16);
+        ctx.strokeStyle = '#2b1b10';
+        ctx.beginPath();
+        ctx.moveTo(boardX, boardY + boardH - 50); ctx.lineTo(boardX, boardY + boardH - 60);
+        ctx.stroke();
+        
+        // Flag on top right of the board
+        ctx.strokeStyle = '#8b5a2b';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(boardX + boardW - 24, boardY - 6); ctx.lineTo(boardX + boardW - 24, boardY - 46);
+        ctx.stroke();
+        
+        ctx.fillStyle = '#ff3838';
+        ctx.beginPath();
+        ctx.moveTo(boardX + boardW - 24, boardY - 46);
+        ctx.lineTo(boardX + boardW + 6, boardY - 36);
+        ctx.lineTo(boardX + boardW - 24, boardY - 26);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
 
+        // Draw buttons inside the frame
         this.menuItems = menuItems;
-        const btnW = boardW - 36;
-        const btnX = boardX + 18;
-        const btnH = 44;
-        const btnGap = 10;
-        const btnStartY = boardY + 22;
+        const btnW = boardW - 48;
+        const btnX = boardX + 24;
+        const btnH = 30;
+        const btnGap = 8;
+        const btnStartY = boardY + 20;
 
         for (let i = 0; i < menuItems.length; i++) {
             const item = menuItems[i];
@@ -362,144 +426,663 @@ export class UI {
             this._menuBtnNew(btnX, by, btnW, btnH, item.label, i === menuSel);
         }
 
-        ctx.fillStyle = '#311e14';
+        // Draw the bottom footer panel
+        ctx.fillStyle = '#4a301f';
         ctx.fillRect(0, H - footerH, W, footerH);
-        ctx.strokeStyle = '#000';
+        ctx.strokeStyle = '#000000';
         ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.moveTo(0, H - footerH);
         ctx.lineTo(W, H - footerH);
         ctx.stroke();
 
+        // Draw footer keyboard and controller icons
+        this._drawKeyboardIcon(24, H - footerH + 18);
+        this._drawGamepadIcon(64, H - footerH + 18);
+        this._drawSparkleIcon(W - 40, H - footerH + 28);
+
         ctx.save();
-        ctx.font = '7px "Press Start 2P"';
+        ctx.font = '8px "Press Start 2P"';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#d7b594';
-        ctx.fillText('Up/Down \u2014 Select        Enter \u2014 Confirm', cx, H - footerH + 22);
-        ctx.fillText('WASD/Arrows \u2014 Move        Space/J \u2014 Jump/Attack', cx, H - footerH + 40);
+        ctx.fillText('Up/Down - Select, Enter - Confirm', cx, H - footerH + 22);
+        ctx.fillText('WASD/Arrows - Move, Space/J - Jump/Attack', cx, H - footerH + 40);
+        ctx.restore();
+    }
+
+    _draw3DText(text, cx, cy, size) {
+        const ctx = this.ctx;
+        ctx.save();
+        ctx.font = `bold ${size}px "Press Start 2P"`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        const charW = ctx.measureText('A').width;
+        const gap = 6;
+        const totalW = text.length * charW + (text.length - 1) * gap;
+        let startX = cx - totalW / 2 + charW / 2;
+
+        const LOGO_COLORS = {
+            'P': { main: '#ff4757', dark: '#c0392b' },
+            'I': { main: '#2979ff', dark: '#0d47a1' },
+            'X': { main: '#ffd600', dark: '#ff8f00' },
+            'E': { main: '#00e676', dark: '#00c853' },
+            'L': { main: '#3d5afe', dark: '#1a237e' },
+            'Y': { main: '#00c853', dark: '#007e33' },
+            'B': { main: '#ff3d00', dark: '#b33600' },
+            'L': { main: '#ff9100', dark: '#b36600' },
+            'O': { main: '#76ff03', dark: '#52b300' },
+            'C': { main: '#00e5ff', dark: '#00a3b3' },
+            'K': { main: '#00c853', dark: '#007e33' }
+        };
+        
+        for (let i = 0; i < text.length; i++) {
+            const char = text[i];
+            const config = LOGO_COLORS[char] || { main: '#ffffff', dark: '#888888' };
+            const x = startX + i * (charW + gap);
+            const depth = 8;
+            
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 8;
+            ctx.lineJoin = 'miter';
+            ctx.miterLimit = 2;
+            for (let d = depth; d >= 0; d--) {
+                ctx.strokeText(char, x, cy + d);
+            }
+            
+            ctx.fillStyle = config.dark;
+            for (let d = depth; d > 0; d--) {
+                ctx.fillText(char, x, cy + d);
+            }
+            
+            ctx.fillStyle = config.main;
+            ctx.fillText(char, x, cy);
+        }
+        ctx.restore();
+    }
+
+    _drawKeyboardIcon(x, y) {
+        const ctx = this.ctx;
+        ctx.save();
+        ctx.fillStyle = '#d7b594';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+        
+        ctx.beginPath();
+        ctx.roundRect(x, y, 32, 20, 3);
+        ctx.fill();
+        ctx.stroke();
+        
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(x + 4, y + 4, 3, 2);
+        ctx.fillRect(x + 9, y + 4, 3, 2);
+        ctx.fillRect(x + 14, y + 4, 3, 2);
+        ctx.fillRect(x + 19, y + 4, 3, 2);
+        ctx.fillRect(x + 24, y + 4, 4, 2);
+        
+        ctx.fillRect(x + 4, y + 8, 4, 2);
+        ctx.fillRect(x + 10, y + 8, 3, 2);
+        ctx.fillRect(x + 15, y + 8, 3, 2);
+        ctx.fillRect(x + 20, y + 8, 3, 2);
+        ctx.fillRect(x + 25, y + 8, 3, 2);
+        
+        ctx.fillRect(x + 4, y + 12, 3, 2);
+        ctx.fillRect(x + 9, y + 13, 14, 2);
+        ctx.fillRect(x + 25, y + 12, 3, 2);
+        ctx.restore();
+    }
+
+    _drawGamepadIcon(x, y) {
+        const ctx = this.ctx;
+        ctx.save();
+        ctx.fillStyle = '#d7b594';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+        
+        ctx.beginPath();
+        ctx.roundRect(x, y, 32, 20, 5);
+        ctx.fill();
+        ctx.stroke();
+        
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(x + 5, y + 9, 6, 2);
+        ctx.fillRect(x + 7, y + 7, 2, 6);
+        
+        ctx.fillStyle = '#ff4757';
+        ctx.fillRect(x + 21, y + 9, 2, 2);
+        ctx.fillStyle = '#2979ff';
+        ctx.fillRect(x + 25, y + 9, 2, 2);
+        ctx.restore();
+    }
+
+    _drawSparkleIcon(x, y) {
+        const ctx = this.ctx;
+        ctx.save();
+        ctx.fillStyle = '#d7b594';
+        ctx.beginPath();
+        ctx.moveTo(x, y - 8);
+        ctx.lineTo(x + 5, y);
+        ctx.lineTo(x, y + 8);
+        ctx.lineTo(x - 5, y);
+        ctx.closePath();
+        ctx.fill();
         ctx.restore();
     }
 
     _drawMenuLevelBg(W, H, RT) {
         const ctx = this.ctx;
-        const levelMap = [
-            [170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170],
-            [0,0,45,46,47,0,0,0,0,0,0,0,0,0,0,0],
-            [0,105,66,66,66,107,0,0,0,0,0,0,0,0,0,0,0],
-            [0,0,85,125,87,0,0,0,0,0,0,0,0,0,0,0,0],
-            [0,0,0,124,0,0,0,0,0,0,0,0,179,180,0,0,0],
-            [0,0,0,166,167,179,179,180,0,0,79,181,182,183,0,0,0],
-            [0,146,147,164,0,181,182,183,0,0,99,0,0,0,0,0,0],
-            [0,0,0,165,0,0,0,0,154,0,99,0,0,0,0,0,154],
-            [49,50,50,50,50,50,50,50,50,50,50,51,0,0,0,49],
-            [169,170,170,170,170,170,170,170,170,170,170,171,81,81,81,169]
-        ];
-        const rows = levelMap.length;
-        const cols = levelMap[0].length;
-        const totalW = cols * RT;
-        const totalH = rows * RT;
-        const offsetX = Math.round((W - totalW) / 2);
-        const offsetY = Math.round((H - totalH) / 2);
-
-        ctx.fillStyle = '#5da1e1';
+        
+        // 1. Sky Gradient
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+        skyGrad.addColorStop(0, '#5da1e1');
+        skyGrad.addColorStop(1, '#a1caff');
+        ctx.fillStyle = skyGrad;
         ctx.fillRect(0, 0, W, H);
+        
 
+        // 4. Custom Fluffy Pixel-Art Matrix Clouds
+        this._drawPixelCloud(ctx, 160, 90, 1.8);
+        this._drawPixelCloud(ctx, 420, 70, 1.2);
+        this._drawPixelCloud(ctx, 700, 100, 2.0);
+
+        // 5. Grass top floor row (y = 432)
+        ctx.fillStyle = '#4caf50'; // Bright grass green
+        ctx.fillRect(0, 432, W, 10);
+        ctx.fillStyle = '#509b24'; // Darker grass bottom
+        ctx.fillRect(0, 442, W, 6);
+        
+        // Dirt floor row below (y = 448)
+        ctx.fillStyle = '#9b613c'; // soil brown
+        ctx.fillRect(0, 448, W, H - 448);
+
+        // Draw outline of grass floor
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, 432);
+        ctx.lineTo(W, 432);
+        ctx.stroke();
+
+        // 6. Corner Block Configurations (Yellow & Brick blocks)
+        // Top-Left corner:
+        this._drawPixelYellowBlock(ctx, 0, 0, RT);
+        this._drawPixelBrick(ctx, RT, 0, RT);
+        this._drawPixelBrick(ctx, 0, RT, RT);
+        
+        // Bottom-Left corner:
+        this._drawPixelBrick(ctx, 0, 324, RT);
+        this._drawPixelBrick(ctx, 0, 378, RT);
+        this._drawPixelYellowBlock(ctx, RT, 378, RT);
+
+        // Top-Right corner:
+        this._drawPixelBrick(ctx, W - RT * 2, 0, RT);
+        this._drawPixelYellowBlock(ctx, W - RT, 0, RT);
+        this._drawPixelBrick(ctx, W - RT, RT, RT);
+        
+        // Bottom-Right corner:
+        this._drawPixelBrick(ctx, W - RT, 324, RT);
+        this._drawPixelBrick(ctx, W - RT, 378, RT);
+        this._drawPixelBrick(ctx, W - RT * 2, 378, RT);
+
+        // 7. Custom Pixel Flowers on the ground
+        this._drawPixelFlower(ctx, 130, 432, '#ff3838'); // Red flower
+        this._drawPixelFlower(ctx, 360, 432, '#ffffff'); // White flower
+        this._drawPixelFlower(ctx, 770, 432, '#ff3838'); // Red flower
+
+        // 8. Custom Animated Spinning Pixel Coin
+        this._drawPixelCoin(ctx, W - 90, 390);
+    }
+
+
+    _drawPixelCloud(ctx, x, y, scale) {
         ctx.save();
-        ctx.imageSmoothingEnabled = false;
-        for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
-                const id = levelMap[r][c];
-                if (id > 0) {
-                    drawTile(ctx, id, offsetX + c * RT, offsetY + r * RT);
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+        
+        const px = 3.5; 
+        const cloudMatrix = [
+            [0,0,0,0,1,1,1,1,0,0,0,0,0,0,0],
+            [0,0,1,1,1,1,1,1,1,1,0,0,0,0,0],
+            [0,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [2,2,1,1,1,1,1,1,1,1,1,1,1,2,2],
+            [0,2,2,2,2,2,2,2,2,2,2,2,2,2,0]
+        ];
+        
+        const R = cloudMatrix.length;
+        const C = cloudMatrix[0].length;
+        const startX = -(C * px) / 2;
+        const startY = -(R * px) / 2;
+        
+        // Draw black outline
+        ctx.fillStyle = '#000000';
+        for (let r = 0; r < R; r++) {
+            for (let c = 0; c < C; c++) {
+                if (cloudMatrix[r][c] > 0) {
+                    ctx.fillRect(startX + c * px - 1.5, startY + r * px - 1.5, px + 3, px + 3);
+                }
+            }
+        }
+        
+        // Fill colors
+        for (let r = 0; r < R; r++) {
+            for (let c = 0; c < C; c++) {
+                const code = cloudMatrix[r][c];
+                if (code === 1) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(startX + c * px, startY + r * px, px, px);
+                } else if (code === 2) {
+                    ctx.fillStyle = '#b0cbe8'; // shadow
+                    ctx.fillRect(startX + c * px, startY + r * px, px, px);
                 }
             }
         }
         ctx.restore();
     }
 
-    _drawMenuCharPanel(x, y, w, h) {
-        const ctx = this.ctx;
-        const pedW = 80;
-        const pedH = 40;
-        const pedX = x + (w - pedW) / 2;
-        const charBottom = y + h * 0.55;
-        const pedY = charBottom;
+    _drawPixelBrick(ctx, x, y, size) {
+        ctx.save();
+        ctx.fillStyle = '#b05030'; // Brick red
+        ctx.fillRect(x, y, size, size);
+        
+        ctx.strokeStyle = '#4a2010';
+        ctx.lineWidth = 2.5;
+        ctx.strokeRect(x, y, size, size);
+        
+        ctx.beginPath();
+        ctx.moveTo(x, y + size / 2); ctx.lineTo(x + size, y + size / 2);
+        ctx.moveTo(x + size / 2, y); ctx.lineTo(x + size / 2, y + size / 2);
+        ctx.moveTo(x + size / 4, y + size / 2); ctx.lineTo(x + size / 4, y + size);
+        ctx.moveTo(x + 3 * size / 4, y + size / 2); ctx.lineTo(x + 3 * size / 4, y + size);
+        ctx.stroke();
+        
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 3.5;
+        ctx.strokeRect(x, y, size, size);
+        ctx.restore();
+    }
 
+    _drawPixelYellowBlock(ctx, x, y, size) {
+        ctx.save();
+        ctx.fillStyle = '#ffc048'; // Shiny gold
+        ctx.fillRect(x, y, size, size);
+        
+        ctx.fillStyle = '#e1b12c'; // Shadow edge
+        ctx.fillRect(x, y + size - 6, size, 6);
+        ctx.fillRect(x + size - 6, y, 6, size);
+        
+        ctx.fillStyle = '#ffffff'; // Shine
+        ctx.fillRect(x + 4, y + 4, 4, 4);
+        
+        ctx.strokeStyle = '#2b1b10';
+        ctx.lineWidth = 2.5;
+        ctx.strokeRect(x + 2, y + 2, size - 4, size - 4);
+        
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 3.5;
+        ctx.strokeRect(x, y, size, size);
+        ctx.restore();
+    }
+
+    _drawPixelFlower(ctx, x, y, flowerColor) {
+        ctx.save();
+        ctx.translate(x, y);
+        
+        const px = 2.5; 
+        const flowerMatrix = [
+            [0,2,2,0],
+            [2,3,3,2],
+            [2,3,3,2],
+            [0,2,2,0],
+            [0,1,0,0],
+            [1,1,0,0],
+            [0,1,1,0],
+            [0,1,0,0],
+            [0,1,0,0]
+        ];
+        
+        const R = flowerMatrix.length;
+        const C = flowerMatrix[0].length;
+        const startX = -(C * px) / 2;
+        const startY = -R * px;
+        
+        // Outline
+        ctx.fillStyle = '#000000';
+        for (let r = 0; r < R; r++) {
+            for (let c = 0; c < C; c++) {
+                if (flowerMatrix[r][c] > 0) {
+                    ctx.fillRect(startX + c * px - 1, startY + r * px - 1, px + 2, px + 2);
+                }
+            }
+        }
+        
+        // Fills
+        for (let r = 0; r < R; r++) {
+            for (let c = 0; c < C; c++) {
+                const code = flowerMatrix[r][c];
+                if (code === 1) {
+                    ctx.fillStyle = '#2ecc71'; // Green stem
+                    ctx.fillRect(startX + c * px, startY + r * px, px, px);
+                } else if (code === 2) {
+                    ctx.fillStyle = flowerColor; // Petals
+                    ctx.fillRect(startX + c * px, startY + r * px, px, px);
+                } else if (code === 3) {
+                    ctx.fillStyle = '#ffd32a'; // Center
+                    ctx.fillRect(startX + c * px, startY + r * px, px, px);
+                }
+            }
+        }
+        ctx.restore();
+    }
+
+    _drawPixelCoin(ctx, x, y) {
+        ctx.save();
+        ctx.translate(x, y);
+        
+        const scaleX = Math.abs(Math.sin(Date.now() / 180));
+        ctx.scale(scaleX, 1);
+        
+        const px = 3;
+        const coinMatrix = [
+            [0,0,1,1,1,0,0],
+            [0,1,1,2,1,1,0],
+            [1,1,2,2,2,1,1],
+            [1,2,2,2,2,2,1],
+            [1,1,2,2,2,1,1],
+            [0,1,1,2,1,1,0],
+            [0,0,1,1,1,0,0]
+        ];
+        
+        const R = coinMatrix.length;
+        const C = coinMatrix[0].length;
+        const startX = -(C * px) / 2;
+        const startY = -(R * px) / 2;
+        
+        // Outline
+        ctx.fillStyle = '#000000';
+        for (let r = 0; r < R; r++) {
+            for (let c = 0; c < C; c++) {
+                if (coinMatrix[r][c] > 0) {
+                    ctx.fillRect(startX + c * px - 1, startY + r * px - 1, px + 2, px + 2);
+                }
+            }
+        }
+        
+        // Fill
+        for (let r = 0; r < R; r++) {
+            for (let c = 0; c < C; c++) {
+                const code = coinMatrix[r][c];
+                if (code === 1) {
+                    ctx.fillStyle = '#ffd32a'; // Bright gold
+                    ctx.fillRect(startX + c * px, startY + r * px, px, px);
+                } else if (code === 2) {
+                    ctx.fillStyle = '#e1b12c'; // Dark gold
+                    ctx.fillRect(startX + c * px, startY + r * px, px, px);
+                }
+            }
+        }
+        ctx.restore();
+    }
+
+    _drawMenuCharPanel(x, y, w) {
+        const ctx = this.ctx;
+        const RT = RENDER_TILE;
+
+        // Draw custom blocky pine trees behind the mound pedestal
+        this._drawPixelPineTree(ctx, 172, 324, 52);
+        this._drawPixelPineTree(ctx, 298, 324, 64);
+        
+        // Custom wood/grass platform pedestal mound
+        ctx.save();
+        
+        // Grassy tops of pedestal blocks
+        ctx.fillStyle = '#4caf50'; // Bright grass green
+        ctx.fillRect(162, 324, 162, 10);
+        ctx.fillStyle = '#509b24'; // Darker green
+        ctx.fillRect(162, 334, 162, 6);
+        
+        // Earth core under
+        ctx.fillStyle = '#9b613c'; // Earth brown
+        ctx.fillRect(162, 340, 162, 24);
+        ctx.fillStyle = '#6d4424'; // Darker core
+        ctx.fillRect(172, 348, 142, 16);
+        
+        // Raised center pedestal block
+        ctx.fillStyle = '#4caf50';
+        ctx.fillRect(210, 270, 66, 10);
+        ctx.fillStyle = '#509b24';
+        ctx.fillRect(210, 280, 66, 6);
+        ctx.fillStyle = '#9b613c';
+        ctx.fillRect(210, 286, 66, 38);
+        ctx.fillStyle = '#6d4424';
+        ctx.fillRect(218, 296, 50, 20);
+        
+        // Black outlines
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 3.5;
+        ctx.strokeRect(162, 324, 162, 40);
+        ctx.strokeRect(210, 270, 66, 54);
+        
+        ctx.restore();
+
+        // Custom pixel Closed Treasure Chest sitting on the right edge block
+        this._drawPixelChest(ctx, 293, 324);
+
+        // Draw the selected main character playing idle animations on the top grass block
         const selChar = PA1Assets.getCharacter(localStorage.getItem('pa1_char') || 'ninja_frog');
-        if (selChar && selChar.idle) {
+        if (selChar && selChar.idle && selChar.idle.width > 0) {
             const srcSz = 32;
             const dstSz = 96;
-            const charX = x + (w - dstSz) / 2;
-            const charY = pedY - dstSz + 4;
+            const charX = 210 + (66 - dstSz) / 2; // centered perfectly on the 66px center pedestal
+            const charY = 270 - dstSz + 6;
+            ctx.save();
             ctx.imageSmoothingEnabled = false;
-            const frame = Math.floor(Date.now() / 150) % PA1Assets.getStripFrameCount(selChar.idle, srcSz);
-            ctx.drawImage(selChar.idle, frame * srcSz, 0, srcSz, srcSz, charX, charY, dstSz, dstSz);
+            const frameCount = PA1Assets.getStripFrameCount(selChar.idle, srcSz);
+            if (frameCount > 0) {
+                const frame = Math.floor(Date.now() / 150) % frameCount;
+                ctx.drawImage(selChar.idle, frame * srcSz, 0, srcSz, srcSz, charX, charY, dstSz, dstSz);
+            }
+            ctx.restore();
         }
 
-        ctx.fillStyle = '#509b24';
-        ctx.fillRect(pedX, pedY, pedW, 10);
-        ctx.strokeStyle = '#000';
+        // Draw the wooden nameplate label centered underneath the platform
+        const labelW = 150;
+        const labelH = 32;
+        const labelX = 243 - labelW / 2;
+        const labelY = 380;
+
+        ctx.save();
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.fillRect(labelX + 4, labelY + 4, labelW, labelH);
+
+        ctx.fillStyle = '#3a2214';
+        ctx.fillRect(labelX, labelY, labelW, labelH);
+
+        ctx.strokeStyle = '#5d3a1a';
         ctx.lineWidth = 3;
-        ctx.strokeRect(pedX, pedY, pedW, 10);
-        ctx.fillStyle = '#9b613c';
-        ctx.fillRect(pedX, pedY + 10, pedW, pedH - 10);
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(pedX, pedY + 10, pedW, pedH - 10);
+        ctx.strokeRect(labelX, labelY, labelW, labelH);
 
         const charIds = PA1Assets.getCharacterIds();
         const charNames = PA1Assets.getCharNames();
         const cIdx = charIds.indexOf(localStorage.getItem('pa1_char') || 'ninja_frog');
         const cName = cIdx >= 0 ? charNames[cIdx] : 'Ninja Frog';
 
-        const labelY = pedY + pedH + 14;
-        const labelW = 140;
-        const labelX = x + (w - labelW) / 2;
-        ctx.fillStyle = '#3a2214';
-        ctx.fillRect(labelX, labelY, labelW, 24);
-        ctx.strokeStyle = '#f7d038';
+        ctx.font = 'bold 9px "Press Start 2P"';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(cName, 243, labelY + labelH / 2 + 1);
+        ctx.restore();
+    }
+
+    _drawPixelPineTree(ctx, x, y, height) {
+        ctx.save();
+        ctx.translate(x, y);
+        
+        // Draw wood trunk
+        ctx.fillStyle = '#5d3a1a';
+        ctx.fillRect(-6, -height, 12, height);
+        ctx.strokeStyle = '#000000';
         ctx.lineWidth = 3;
-        ctx.strokeRect(labelX, labelY, labelW, 24);
-        this._text(cName, x + w / 2, labelY + 12, 'bold 9px "Press Start 2P"', '#fff');
+        ctx.strokeRect(-6, -height, 12, height);
+        
+        // Layered blocky pine triangles
+        const layers = [
+            { bottomY: -height * 0.35, w: 42, h: 12 },
+            { bottomY: -height * 0.6,  w: 30, h: 12 },
+            { bottomY: -height * 0.85, w: 18, h: 12 }
+        ];
+        
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 3.5;
+        
+        for (const layer of layers) {
+            ctx.strokeRect(-layer.w / 2, layer.bottomY - layer.h, layer.w, layer.h);
+        }
+        
+        ctx.fillStyle = '#2ecc71';
+        for (const layer of layers) {
+            ctx.fillRect(-layer.w / 2, layer.bottomY - layer.h, layer.w, layer.h);
+            ctx.fillStyle = '#27ae60'; // layer bottom shadow
+            ctx.fillRect(-layer.w / 2, layer.bottomY - 3, layer.w, 3);
+            ctx.fillStyle = '#2ecc71';
+        }
+        ctx.restore();
+    }
+
+    _drawPixelChest(ctx, x, y) {
+        ctx.save();
+        ctx.translate(x, y);
+        
+        // Wood chest base
+        ctx.fillStyle = '#a0522d';
+        ctx.fillRect(-12, -18, 24, 18);
+        
+        // Gold bands on corners
+        ctx.fillStyle = '#ffd700';
+        ctx.fillRect(-10, -18, 3, 18);
+        ctx.fillRect(7, -18, 3, 18);
+        
+        // Lid top rim
+        ctx.fillStyle = '#8b4513';
+        ctx.fillRect(-12, -26, 24, 8);
+        ctx.fillStyle = '#ffd700';
+        ctx.fillRect(-10, -26, 3, 8);
+        ctx.fillRect(7, -26, 3, 8);
+        
+        // Keyhole lock
+        ctx.fillStyle = '#ffd700';
+        ctx.fillRect(-3, -13, 6, 6);
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(-1, -11, 2, 3);
+        
+        // Black outline
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(-12, -26, 24, 26);
+        
+        ctx.restore();
     }
 
     _menuBtnNew(x, y, w, h, label, isSel) {
         const ctx = this.ctx;
         ctx.save();
+
         if (isSel) {
-            ctx.fillStyle = '#f7d038';
+            // Draw glowing yellow outer border shadow
+            ctx.shadowColor = 'rgba(255, 200, 50, 0.8)';
+            ctx.shadowBlur = 12;
+            
+            // Outer golden-yellow outline
+            ctx.fillStyle = '#ffc048';
             ctx.fillRect(x, y, w, h);
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 3;
-            ctx.strokeRect(x, y, w, h);
+            ctx.shadowBlur = 0; // disable shadow for interior
 
-            ctx.fillStyle = 'rgba(184,134,11,0.6)';
-            ctx.fillRect(x, y + h - 4, w, 4);
+            // Inner dark-blue gradient fill
+            const btnGrad = ctx.createLinearGradient(x, y, x, y + h);
+            btnGrad.addColorStop(0, '#4b6584');
+            btnGrad.addColorStop(1, '#2d3748');
+            ctx.fillStyle = btnGrad;
+            ctx.fillRect(x + 3, y + 3, w - 6, h - 6);
 
-            ctx.font = 'bold 11px "Press Start 2P"';
+            // Inner cyan highlight stroke
+            ctx.strokeStyle = '#70a1ff';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x + 3, y + 3, w - 6, h - 6);
+
+            // Display sparkles flanked text
+            ctx.font = 'bold 9px "Press Start 2P"';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            const blinkOn = Math.floor(Date.now() / 300) % 2 === 0;
-            if (blinkOn) {
-                ctx.fillStyle = '#ad2f13';
-                ctx.fillText('\u25C6', x + 22, y + h / 2);
-                ctx.fillText('\u25C6', x + w - 22, y + h / 2);
-            }
-            ctx.font = 'bold 11px "Press Start 2P"';
-            ctx.fillStyle = '#3a2214';
-            ctx.fillText(label, x + w / 2, y + h / 2);
+            
+            ctx.fillStyle = '#000000';
+            ctx.fillText(`+ ${label} +`, x + w / 2 + 1, y + h / 2 + 1);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(`+ ${label} +`, x + w / 2, y + h / 2);
+
+            // Draw floating gems on the sides of the button
+            this._drawPixelGem(x - 22, y + h / 2);
+            this._drawPixelGem(x + w + 22, y + h / 2);
         } else {
-            ctx.fillStyle = '#4b6584';
+            // Blue-grey vertical gradient body
+            const btnGrad = ctx.createLinearGradient(x, y, x, y + h);
+            btnGrad.addColorStop(0, '#4b6584');
+            btnGrad.addColorStop(1, '#2d3748');
+            ctx.fillStyle = btnGrad;
             ctx.fillRect(x, y, w, h);
-            ctx.strokeStyle = '#263238';
+
+            // Outer dark-blue border
+            ctx.strokeStyle = '#1a202c';
             ctx.lineWidth = 3;
             ctx.strokeRect(x, y, w, h);
-            ctx.font = '11px "Press Start 2P"';
+
+            // Light highlight border inside
+            ctx.strokeStyle = '#57606f';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x + 2, y + 2, w - 4, h - 4);
+
+            ctx.font = '9px "Press Start 2P"';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
+            
+            ctx.fillStyle = '#000000';
+            ctx.fillText(label, x + w / 2 + 1, y + h / 2 + 1);
             ctx.fillStyle = '#d1d8e0';
             ctx.fillText(label, x + w / 2, y + h / 2);
+        }
+        ctx.restore();
+    }
+
+    _drawPixelGem(gx, gy) {
+        const ctx = this.ctx;
+        ctx.save();
+        ctx.imageSmoothingEnabled = false;
+        const px = 2.5; 
+        const colors = [
+            [0,0, 1, 0,0],
+            [0,2, 2, 3,0],
+            [2,2, 4, 3,3],
+            [0,2, 2, 3,0],
+            [0,0, 1, 0,0]
+        ];
+        const palette = {
+            1: '#ffd32a', // Yellow
+            2: '#ff3f34', // Red
+            3: '#3c40c6', // Blue
+            4: '#0fbcf9'  // Light Blue
+        };
+        const startX = gx - (5 * px) / 2;
+        const startY = gy - (5 * px) / 2;
+        for (let r = 0; r < 5; r++) {
+            for (let c = 0; c < 5; c++) {
+                const colorCode = colors[r][c];
+                if (colorCode > 0) {
+                    ctx.fillStyle = palette[colorCode];
+                    ctx.fillRect(startX + c * px, startY + r * px, px, px);
+                }
+            }
         }
         ctx.restore();
     }

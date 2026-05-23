@@ -1197,12 +1197,15 @@ export class Game {
             ctx.restore();
 
             const charData = PA1Assets.getCharacter(ids[i]);
-            if (charData && charData.idle) {
+            if (charData && charData.idle && charData.idle.width > 0) {
                 const sheet = charData.idle;
                 const frameW = 32;
-                const frame = Math.floor(this.frameCount / 10) % PA1Assets.getStripFrameCount(sheet, frameW);
-                const renderSz = cardW * 0.7;
-                PA1Assets.drawStripFrame(ctx, sheet, frame, frameW, 32, x + (cardW - renderSz) / 2, cardY + 30, renderSz, renderSz, false);
+                const frameCount = PA1Assets.getStripFrameCount(sheet, frameW);
+                if (frameCount > 0) {
+                    const frame = Math.floor(this.frameCount / 10) % frameCount;
+                    const renderSz = 96;
+                    PA1Assets.drawStripFrame(ctx, sheet, frame, frameW, 32, x + (cardW - renderSz) / 2, cardY + 30, renderSz, renderSz, false);
+                }
             }
 
             ctx.fillStyle = isSel ? '#f0d860' : '#7a6a8a';
