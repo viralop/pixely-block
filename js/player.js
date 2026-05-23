@@ -271,67 +271,65 @@ export class Player {
     render(ctx, camX, camY, drawCharFn) {
         if (this.dead) return;
         if (this.iframes > 0 && Math.floor(this.iframes / 3) % 2 === 0) return;
-        const drawX = this.x - camX - (RENDER_CHAR - this.w) / 2;
-        const drawY = this.y - camY - (RENDER_CHAR - this.h);
-        const sz = RENDER_CHAR + 1;
-        const flip = this.facing < 0;
-        const isAttacking = this.attacking;
 
         const charId = this.characterId || 'ninja_frog';
         const charData = PA1Assets.getCharacter(charId);
+        const isAttacking = this.attacking;
+        const flip = this.facing < 0;
 
         if (charData && (charData.idle || charData.run)) {
-            let sheet, frameW = 32, frameH = 32;
-            let frame = 0;
+            const frameW = 32, frameH = 32;
+            const renderSz = frameW * SCALE;
+            const drawX = Math.round(this.x - camX - (renderSz - this.w) / 2);
+            const drawY = Math.round(this.y - camY - (renderSz - this.h));
+            let sheet, frame = 0;
 
             if (this.climbing || this.onRope) {
                 sheet = charData.idle;
                 frame = Math.floor(this.animTimer / 10) % PA1Assets.getStripFrameCount(sheet, frameW);
             } else if (!this.onGround) {
-                if (this.vy < -3) {
-                    sheet = charData.jump;
-                    frame = 0;
-                } else {
-                    sheet = charData.fall;
-                    frame = 0;
-                }
+                sheet = this.vy < -3 ? charData.jump : charData.fall;
+                frame = 0;
             } else if (Math.abs(this.vx) > 0.5) {
                 sheet = charData.run;
-                const total = PA1Assets.getStripFrameCount(sheet, frameW);
-                frame = this.animFrame % total;
+                frame = this.animFrame % PA1Assets.getStripFrameCount(sheet, frameW);
             } else {
                 sheet = charData.idle;
-                const total = PA1Assets.getStripFrameCount(sheet, frameW);
-                frame = this.idleAnimFrame % total;
+                frame = this.idleAnimFrame % PA1Assets.getStripFrameCount(sheet, frameW);
             }
 
             if (sheet) {
-                PA1Assets.drawStripFrame(ctx, sheet, frame, frameW, frameH, drawX, drawY, sz, sz, flip);
+                PA1Assets.drawStripFrame(ctx, sheet, frame, frameW, frameH, drawX, drawY, renderSz, renderSz, flip);
             }
 
             if (isAttacking) {
-                this._renderWeapon(ctx, drawX, drawY, sz);
-            }
-        } else if (hasExtra('knight_idle')) {
-            let key = 'knight_idle';
-            if (this.climbing) key = 'knight_idle';
-            else if (this.onRope) key = 'knight_idle';
-            else if (!this.onGround) key = this.vy < 0 ? 'knight_run' : 'knight_idle';
-            else if (Math.abs(this.vx) > 0.5) key = this.animFrame % 2 === 0 ? 'knight_run' : 'knight_idle';
-            drawExtra(ctx, key, drawX, drawY, sz, flip);
-            if (isAttacking) {
-                this._renderWeapon(ctx, drawX, drawY, sz);
+                this._renderWeapon(ctx, drawX, drawY, renderSz);
             }
         } else {
-            let charId2;
-            if (this.climbing) charId2 = CHAR_IDS.jump;
-            else if (this.onRope) charId2 = CHAR_IDS.idle;
-            else if (!this.onGround) charId2 = this.vy < 0 ? CHAR_IDS.jump : CHAR_IDS.fall;
-            else if (Math.abs(this.vx) > 0.5) charId2 = this.runFrames[this.animFrame];
-            else charId2 = CHAR_IDS.idle;
-            drawCharFn(ctx, charId2, drawX, drawY, flip);
-            if (isAttacking) {
-                this._renderWeapon(ctx, drawX, drawY, sz);
+            const sz = RENDER_CHAR + 1;
+            const drawX = this.x - camX - (RENDER_CHAR - this.w) / 2;
+            const drawY = this.y - camY - (RENDER_CHAR - this.h);
+            if (hasExtra('knight_idle')) {
+                let key = 'knight_idle';
+                if (this.climbing) key = 'knight_idle';
+                else if (this.onRope) key = 'knight_idle';
+                else if (!this.onGround) key = this.vy < 0 ? 'knight_run' : 'knight_idle';
+                else if (Math.abs(this.vx) > 0.5) key = this.animFrame % 2 === 0 ? 'knight_run' : 'knight_idle';
+                drawExtra(ctx, key, drawX, drawY, sz, flip);
+                if (isAttacking) {
+                    this._renderWeapon(ctx, drawX, drawY, sz);
+                }
+            } else {
+                let charId2;
+                if (this.climbing) charId2 = CHAR_IDS.jump;
+                else if (this.onRope) charId2 = CHAR_IDS.idle;
+                else if (!this.onGround) charId2 = this.vy < 0 ? CHAR_IDS.jump : CHAR_IDS.fall;
+                else if (Math.abs(this.vx) > 0.5) charId2 = this.runFrames[this.animFrame];
+                else charId2 = CHAR_IDS.idle;
+                drawCharFn(ctx, charId2, drawX, drawY, flip);
+                if (isAttacking) {
+                    this._renderWeapon(ctx, drawX, drawY, sz);
+                }
             }
         }
     }
