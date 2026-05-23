@@ -17,6 +17,17 @@ const COYOTE_TIME = 6;
 const CLIMB_SPEED = 2.5;
 const ROPE_SPEED = 3;
 
+const PA1_SRC = 32;
+const PA1_REND = PA1_SRC * 3;
+const PA1_OX = (PA1_REND - RENDER_CHAR) / 2;
+const PA1_OY = PA1_REND - RENDER_CHAR;
+
+let _spriteBuf = null;
+let _spriteBufCtx = null;
+let _lastBufFrame = -1;
+let _lastBufFlip = false;
+let _lastBufSheet = null;
+
 const CHAR_IDS = {
     idle: 1,
     run1: 2, run2: 3, run3: 4,
@@ -262,6 +273,34 @@ export class Player {
         ctx.restore();
     }
 
+    _getSprite(sheet, frame, flip) {
+        if (!_spriteBuf) {
+            _spriteBuf = document.createElement('canvas');
+            _spriteBuf.width = PA1_REND;
+            _spriteBuf.height = PA1_REND;
+            _spriteBufCtx = _spriteBuf.getContext('2d');
+        }
+        if (_lastBufFrame === frame && _lastBufFlip === flip && _lastBufSheet === sheet) {
+            return _spriteBuf;
+        }
+        _lastBufFrame = frame;
+        _lastBufFlip = flip;
+        _lastBufSheet = sheet;
+        const c = _spriteBufCtx;
+        c.clearRect(0, 0, PA1_REND, PA1_REND);
+        c.imageSmoothingEnabled = false;
+        if (flip) {
+            c.save();
+            c.translate(PA1_REND, 0);
+            c.scale(-1, 1);
+            c.drawImage(sheet, frame * PA1_SRC, 0, PA1_SRC, PA1_SRC, 0, 0, PA1_REND, PA1_REND);
+            c.restore();
+        } else {
+            c.drawImage(sheet, frame * PA1_SRC, 0, PA1_SRC, PA1_SRC, 0, 0, PA1_REND, PA1_REND);
+        }
+        return _spriteBuf;
+    }
+
     render(ctx, camX, camY, drawCharFn) {
         if (this.dead) return;
         if (this.iframes > 0 && Math.floor(this.iframes / 3) % 2 === 0) return;
@@ -272,42 +311,34 @@ export class Player {
         const flip = this.facing < 0;
 
         if (charData && (charData.idle || charData.run)) {
-            const frameW = 32, frameH = 32;
-            const renderSz = frameW * SCALE;
-            const drawX = Math.round(this.x - camX - (renderSz - this.w) / 2);
-            const drawY = Math.round(this.y - camY - (renderSz - this.h));
             let sheet, frame = 0;
 
             if (this.climbing || this.onRope) {
                 sheet = charData.idle;
-                frame = Math.floor(Date.now() / 150) % PA1Assets.getStripFrameCount(sheet, frameW);
+                frame = Math.floor(Date.now() / 150) % PA1Assets.getStripFrameCount(sheet, PA1_SRC);
             } else if (!this.onGround) {
                 sheet = this.vy < -3 ? charData.jump : charData.fall;
                 frame = 0;
             } else if (Math.abs(this.vx) > 0.5) {
                 sheet = charData.run;
-                const spd = 80;
-                frame = Math.floor(Date.now() / spd) % PA1Assets.getStripFrameCount(sheet, frameW);
+                frame = Math.floor(Date.now() / 80) % PA1Assets.getStripFrameCount(sheet, PA1_SRC);
             } else {
                 sheet = charData.idle;
-                frame = Math.floor(Date.now() / 150) % PA1Assets.getStripFrameCount(sheet, frameW);
+                frame = Math.floor(Date.now() / 150) % PA1Assets.getStripFrameCount(sheet, PA1_SRC);
             }
 
             if (sheet) {
+                const buf = this._getSprite(sheet, frame, flip);
+                const baseX = Math.round(this.x - camX - (RENDER_CHAR - this.w) / 2);
+                const baseY = Math.round(this.y - camY - (RENDER_CHAR - this.h));
                 ctx.imageSmoothingEnabled = false;
-                if (flip) {
-                    ctx.save();
-                    ctx.translate(drawX + renderSz, drawY);
-                    ctx.scale(-1, 1);
-                    ctx.drawImage(sheet, frame * frameW, 0, frameW, frameH, 0, 0, renderSz, renderSz);
-                    ctx.restore();
-                } else {
-                    ctx.drawImage(sheet, frame * frameW, 0, frameW, frameH, drawX, drawY, renderSz, renderSz);
-                }
+                ctx.drawImage(buf, PA1_OX, PA1_OY, RENDER_CHAR, RENDER_CHAR, baseX, baseY, RENDER_CHAR, RENDER_CHAR);
             }
 
             if (isAttacking) {
-                this._renderWeapon(ctx, drawX, drawY, renderSz);
+                const baseX = Math.round(this.x - camX - (RENDER_CHAR - this.w) / 2);
+                const baseY = Math.round(this.y - camY - (RENDER_CHAR - this.h));
+                this._renderWeapon(ctx, baseX, baseY, RENDER_CHAR);
             }
         } else {
             const sz = RENDER_CHAR + 1;
