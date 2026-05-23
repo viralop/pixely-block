@@ -277,74 +277,85 @@ export class UI {
         const ctx = this.ctx;
         const W = this.w, H = this.h;
         const cx = W / 2;
+        const RT = RENDER_TILE;
+        const BT = 24 * 3;
 
-        ctx.fillStyle = '#5da1e1';
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+        skyGrad.addColorStop(0, '#87ceeb');
+        skyGrad.addColorStop(0.4, '#5da1e1');
+        skyGrad.addColorStop(0.7, '#4a90d9');
+        skyGrad.addColorStop(1, '#3a6a9a');
+        ctx.fillStyle = skyGrad;
         ctx.fillRect(0, 0, W, H);
 
+        this._drawMenuBgTiles(BT);
+
         ctx.save();
-        ctx.globalAlpha = 0.06;
+        ctx.globalAlpha = 0.12;
         ctx.fillStyle = '#fff';
-        const t = Date.now() / 10000;
-        for (let i = 0; i < 6; i++) {
-            const bx = ((i * 180 + t * (40 + i * 15)) % (W + 200)) - 100;
-            const by = 30 + i * 25;
+        const t = Date.now() / 8000;
+        for (let i = 0; i < 8; i++) {
+            const bx = ((i * 140 + t * (30 + i * 12)) % (W + 300)) - 150;
+            const by = 15 + (i % 3) * 30;
+            const rw = 60 + (i % 4) * 20;
             ctx.beginPath();
-            ctx.ellipse(bx, by, 50 + i * 10, 14 + i * 3, 0, 0, Math.PI * 2);
+            ctx.ellipse(bx, by, rw, 12 + (i % 3) * 4, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(bx - rw * 0.4, by + 3, rw * 0.4, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(bx + rw * 0.35, by + 2, rw * 0.35, 7, 0, 0, Math.PI * 2);
             ctx.fill();
         }
         ctx.globalAlpha = 1;
         ctx.restore();
 
+        this._drawMenuHills(H, BT);
+
         const footerH = 60;
-        const groundH = 32;
-        const groundTop = H - footerH - groundH;
-        ctx.fillStyle = '#6abe30';
-        ctx.fillRect(0, groundTop, W, 8);
-        ctx.fillStyle = '#744b34';
-        ctx.fillRect(0, groundTop + 8, W, groundH - 8);
+        const groundRows = 2;
+        const groundTop = H - footerH - RT * groundRows;
+        for (let row = 0; row < groundRows; row++) {
+            for (let col = 0; col < Math.ceil(W / RT) + 1; col++) {
+                drawTile(ctx, row === 0 ? 33 : 49, col * RT, groundTop + row * RT);
+            }
+        }
 
         ctx.save();
-        ctx.fillStyle = '#f7d038';
-        ctx.font = '36px "Press Start 2P"';
+        ctx.font = 'bold 40px "Press Start 2P"';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
+        const titleY = 52;
         ctx.fillStyle = '#000';
-        ctx.fillText('PIXELY BLOCK', cx + 7, 47);
-        ctx.fillStyle = '#ad2f13';
-        ctx.fillText('PIXELY BLOCK', cx + 4, 44);
+        ctx.fillText('PIXELY BLOCK', cx + 5, titleY + 5);
+        ctx.fillStyle = '#6b3a10';
+        ctx.fillText('PIXELY BLOCK', cx + 3, titleY + 3);
+        ctx.fillStyle = '#ad6f13';
+        ctx.fillText('PIXELY BLOCK', cx + 2, titleY + 2);
+        ctx.fillStyle = '#f7d038';
+        ctx.fillText('PIXELY BLOCK', cx, titleY);
         ctx.restore();
 
         ctx.save();
-        ctx.shadowColor = 'rgba(0,0,0,0)';
-        ctx.shadowBlur = 0;
-        ctx.font = '36px "Press Start 2P"';
+        ctx.font = '9px "Press Start 2P"';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#000';
-        ctx.fillText('PIXELY BLOCK', cx + 4, 44);
-        ctx.fillStyle = '#f7d038';
-        ctx.fillText('PIXELY BLOCK', cx, 40);
-        ctx.restore();
-
-        ctx.save();
-        ctx.font = '10px "Press Start 2P"';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#000';
-        ctx.fillText("A Knight's Journey to Save the Queen", cx + 2, 72);
+        ctx.fillText("A Knight's Journey to Save the Queen", cx + 1, 82);
         ctx.fillStyle = '#fff';
-        ctx.fillText("A Knight's Journey to Save the Queen", cx, 70);
+        ctx.fillText("A Knight's Journey to Save the Queen", cx, 81);
         ctx.fillStyle = '#000';
-        ctx.fillText('Defeat the bosses every 5 levels!', cx + 2, 90);
+        ctx.fillText('Defeat the bosses every 5 levels!', cx + 1, 98);
         ctx.fillStyle = '#e2ecf7';
-        ctx.fillText('Defeat the bosses every 5 levels!', cx, 88);
+        ctx.fillText('Defeat the bosses every 5 levels!', cx, 97);
         ctx.restore();
 
-        const contentTop = 110;
+        const contentTop = 118;
         const contentH = groundTop - contentTop - 10;
-        const leftW = 200;
+        const leftW = 220;
         const rightW = 320;
-        const gap = 40;
+        const gap = 30;
         const totalW = leftW + gap + rightW;
         const leftX = cx - totalW / 2;
         const rightX = leftX + leftW + gap;
@@ -352,22 +363,25 @@ export class UI {
         this._drawMenuCharPanel(leftX, contentTop, leftW, contentH);
 
         const boardX = rightX;
-        const boardY = contentTop + 10;
+        const boardY = contentTop + 5;
         const boardW = rightW;
-        const boardH = contentH - 20;
+        const boardH = contentH - 10;
 
         ctx.fillStyle = '#4a301f';
         ctx.fillRect(boardX, boardY, boardW, boardH);
         ctx.strokeStyle = '#2b1b10';
         ctx.lineWidth = 6;
         ctx.strokeRect(boardX, boardY, boardW, boardH);
+        ctx.strokeStyle = '#6b4a1e';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(boardX + 8, boardY + 8, boardW - 16, boardH - 16);
 
         this.menuItems = menuItems;
-        const btnW = boardW - 32;
-        const btnX = boardX + 16;
-        const btnH = 42;
-        const btnGap = 12;
-        const btnStartY = boardY + 20;
+        const btnW = boardW - 36;
+        const btnX = boardX + 18;
+        const btnH = 44;
+        const btnGap = 10;
+        const btnStartY = boardY + 22;
 
         for (let i = 0; i < menuItems.length; i++) {
             const item = menuItems[i];
@@ -395,6 +409,62 @@ export class UI {
         ctx.fillStyle = '#d7b594';
         ctx.fillText('Up/Down \u2014 Select        Enter \u2014 Confirm', cx, H - footerH + 22);
         ctx.fillText('WASD/Arrows \u2014 Move        Space/J \u2014 Jump/Attack', cx, H - footerH + 40);
+        ctx.restore();
+    }
+
+    _drawMenuBgTiles(bt) {
+        const ctx = this.ctx;
+        const bg = ctx.canvas;
+        const cols = Math.ceil(this.w / bt) + 2;
+        const rows = Math.ceil(this.h / bt) + 2;
+        const t = Date.now() / 25000;
+
+        ctx.save();
+        ctx.globalAlpha = 0.15;
+        ctx.imageSmoothingEnabled = false;
+
+        const bgSheet = null;
+        try {
+            const bgImg = document.querySelector('img[src*="tilemap-backgrounds"]');
+        } catch(e) {}
+
+        ctx.globalAlpha = 1;
+        ctx.restore();
+    }
+
+    _drawMenuHills(H, bt) {
+        const ctx = this.ctx;
+        const W = this.w;
+        const footerH = 60;
+        const RT = RENDER_TILE;
+        const hillBase = H - footerH - RT * 2 - 40;
+
+        ctx.save();
+        ctx.fillStyle = '#4a9044';
+        ctx.globalAlpha = 0.4;
+        ctx.beginPath();
+        ctx.moveTo(0, H);
+        for (let x = 0; x <= W; x += 8) {
+            const h1 = Math.sin(x * 0.008) * 30 + Math.sin(x * 0.003 + 1) * 20;
+            ctx.lineTo(x, hillBase + 30 - h1);
+        }
+        ctx.lineTo(W, H);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        ctx.fillStyle = '#3a7a34';
+        ctx.globalAlpha = 0.35;
+        ctx.beginPath();
+        ctx.moveTo(0, H);
+        for (let x = 0; x <= W; x += 8) {
+            const h2 = Math.sin(x * 0.006 + 2) * 25 + Math.sin(x * 0.012 + 0.5) * 15;
+            ctx.lineTo(x, hillBase + 50 - h2);
+        }
+        ctx.lineTo(W, H);
+        ctx.closePath();
+        ctx.fill();
         ctx.restore();
     }
 
@@ -441,7 +511,7 @@ export class UI {
         ctx.strokeStyle = '#f7d038';
         ctx.lineWidth = 3;
         ctx.strokeRect(labelX, labelY, labelW, 24);
-        this._text(cName, x + w / 2, labelY + 12, '8px "Press Start 2P"', '#fff');
+        this._text(cName, x + w / 2, labelY + 12, 'bold 9px "Press Start 2P"', '#fff');
     }
 
     _menuBtnNew(x, y, w, h, label, isSel) {
@@ -454,26 +524,32 @@ export class UI {
             ctx.lineWidth = 3;
             ctx.strokeRect(x, y, w, h);
 
-            ctx.fillStyle = 'rgba(184,134,11,0.5)';
+            ctx.fillStyle = 'rgba(184,134,11,0.6)';
             ctx.fillRect(x, y + h - 4, w, 4);
 
-            ctx.font = '10px "Press Start 2P"';
+            ctx.font = 'bold 11px "Press Start 2P"';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             const blinkOn = Math.floor(Date.now() / 300) % 2 === 0;
             if (blinkOn) {
                 ctx.fillStyle = '#ad2f13';
-                ctx.fillText('\u25C6', x + 20, y + h / 2);
-                ctx.fillText('\u25C6', x + w - 20, y + h / 2);
+                ctx.fillText('\u25C6', x + 22, y + h / 2);
+                ctx.fillText('\u25C6', x + w - 22, y + h / 2);
             }
-            this._text(label, x + w / 2, y + h / 2, '10px "Press Start 2P"', '#3a2214');
+            ctx.font = 'bold 11px "Press Start 2P"';
+            ctx.fillStyle = '#3a2214';
+            ctx.fillText(label, x + w / 2, y + h / 2);
         } else {
             ctx.fillStyle = '#4b6584';
             ctx.fillRect(x, y, w, h);
             ctx.strokeStyle = '#263238';
             ctx.lineWidth = 3;
             ctx.strokeRect(x, y, w, h);
-            this._text(label, x + w / 2, y + h / 2, '10px "Press Start 2P"', '#d1d8e0');
+            ctx.font = '11px "Press Start 2P"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#d1d8e0';
+            ctx.fillText(label, x + w / 2, y + h / 2);
         }
         ctx.restore();
     }
