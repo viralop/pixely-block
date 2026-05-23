@@ -352,10 +352,28 @@ export class UI {
 
         const selChar = PA1Assets.getCharacter(localStorage.getItem('pa1_char') || 'ninja_frog');
         if (selChar && selChar.idle) {
-            const previewSz = 48;
-            const px = cx - previewSz / 2;
-            const py = panelY + 132;
-            PA1Assets.drawStripFrame(ctx, selChar.idle, Math.floor(Date.now() / 150) % PA1Assets.getStripFrameCount(selChar.idle, 32), 32, 32, px, py, previewSz, previewSz, false);
+            const previewSz = 96;
+            const px = panelX - previewSz - 12;
+            const py = this.h / 2 - previewSz / 2;
+            ctx.save();
+            ctx.fillStyle = 'rgba(40,28,16,0.7)';
+            ctx.beginPath();
+            ctx.roundRect(px - 8, py - 8, previewSz + 16, previewSz + 16, 6);
+            ctx.fill();
+            ctx.strokeStyle = '#8b6914';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(px - 7, py - 7, previewSz + 14, previewSz + 14, 5);
+            ctx.stroke();
+            ctx.imageSmoothingEnabled = false;
+            const idleFrame = Math.floor(Date.now() / 150) % PA1Assets.getStripFrameCount(selChar.idle, 32);
+            ctx.drawImage(selChar.idle, idleFrame * 32, 0, 32, 32, px, py, previewSz, previewSz);
+            ctx.restore();
+            const charNames = PA1Assets.getCharNames();
+            const charIds = PA1Assets.getCharacterIds();
+            const cIdx = charIds.indexOf(localStorage.getItem('pa1_char') || 'ninja_frog');
+            const cName = cIdx >= 0 ? charNames[cIdx] : 'Ninja Frog';
+            this._text(cName, px + previewSz / 2, py + previewSz + 16, this.fontSmall, '#c8a832');
         }
 
         const startY = panelY + 150;

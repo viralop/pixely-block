@@ -299,6 +299,7 @@ export class Player {
             }
 
             if (sheet) {
+                ctx.clearRect(drawX, drawY, renderSz, renderSz);
                 PA1Assets.drawStripFrame(ctx, sheet, frame, frameW, frameH, drawX, drawY, renderSz, renderSz, flip);
             }
 
