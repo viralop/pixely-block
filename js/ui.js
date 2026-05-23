@@ -471,10 +471,13 @@ export class UI {
             'L': { main: '#3d5afe', dark: '#1a237e' },
             'Y': { main: '#00c853', dark: '#007e33' },
             'B': { main: '#ff3d00', dark: '#b33600' },
-            'L': { main: '#ff9100', dark: '#b36600' },
             'O': { main: '#76ff03', dark: '#52b300' },
             'C': { main: '#00e5ff', dark: '#00a3b3' },
-            'K': { main: '#00c853', dark: '#007e33' }
+            'K': { main: '#00c853', dark: '#007e33' },
+            'A': { main: '#ff9100', dark: '#b36600' },
+            'U': { main: '#ffd600', dark: '#ff8f00' },
+            'S': { main: '#2979ff', dark: '#0d47a1' },
+            'D': { main: '#ff3d00', dark: '#b33600' }
         };
         
         for (let i = 0; i < text.length; i++) {
@@ -1171,42 +1174,110 @@ export class UI {
     }
 
     renderPause(score, levelName, pauseSel) {
+        const ctx = this.ctx;
         const cx = this.w / 2, cy = this.h / 2;
-        const pw = 360, ph = 240;
-        const px = cx - pw / 2, py = cy - ph / 2;
+        
+        // Dark transparent background overlay
+        ctx.save();
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(0, 0, this.w, this.h);
+        ctx.restore();
 
-        this.ctx.save();
-        this.ctx.fillStyle = 'rgba(4,2,10,0.75)';
-        this.ctx.fillRect(0, 0, this.w, this.h);
-        this.ctx.shadowColor = 'rgba(100,50,200,0.2)';
-        this.ctx.shadowBlur = 30;
-        this._gradientBg(px, py, pw, ph, C.panelBg, 'rgba(14,8,28,0.95)');
-        this.ctx.shadowBlur = 0;
-        this.ctx.strokeStyle = C.borderLight;
-        this.ctx.lineWidth = 2;
-        this.ctx.beginPath();
-        this.ctx.roundRect(px + 2, py + 2, pw - 4, ph - 4, 8);
-        this.ctx.stroke();
-        this.ctx.restore();
+        const boardW = 360;
+        const boardH = 260;
+        const boardX = cx - boardW / 2;
+        const boardY = cy - boardH / 2;
 
-        this._ornament(cx, py + 30);
-        this._glowText('PAUSED', cx, py + 50, this.fontTitle, '#fff', 'rgba(200,180,255,0.4)');
-        this._text(levelName, cx, py + 80, this.fontSmall, C.cyan);
-        this._text(`Score: ${score}`, cx, py + 100, this.fontSmall, C.gold);
+        ctx.save();
+        // Left post shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillRect(boardX + 4, boardY - 6 + 4, 14, boardH + 12);
+        // Right post shadow
+        ctx.fillRect(boardX + boardW - 14 + 4, boardY - 6 + 4, 14, boardH + 12);
+        
+        // Left post fill
+        ctx.fillStyle = '#5d3a1a'; // Medium wood brown
+        ctx.fillRect(boardX, boardY - 6, 14, boardH + 12);
+        ctx.strokeStyle = '#2b1b10'; // Dark border
+        ctx.lineWidth = 3;
+        ctx.strokeRect(boardX, boardY - 6, 14, boardH + 12);
+        
+        // Right post fill
+        ctx.fillStyle = '#5d3a1a';
+        ctx.fillRect(boardX + boardW - 14, boardY - 6, 14, boardH + 12);
+        ctx.strokeRect(boardX + boardW - 14, boardY - 6, 14, boardH + 12);
+        
+        // Top log
+        ctx.fillStyle = '#6e4424';
+        ctx.fillRect(boardX - 8, boardY - 6, boardW + 16, 16);
+        ctx.strokeRect(boardX - 8, boardY - 6, boardW + 16, 16);
+        
+        // Bottom log
+        ctx.fillStyle = '#6e4424';
+        ctx.fillRect(boardX - 8, boardY + boardH - 24, boardW + 16, 16);
+        ctx.strokeRect(boardX - 8, boardY + boardH - 24, boardW + 16, 16);
+        
+        // Inner board fill
+        ctx.fillStyle = '#3a2214'; // Dark wood interior
+        ctx.fillRect(boardX + 14, boardY + 10, boardW - 28, boardH - 34);
+        ctx.strokeStyle = '#2b1b10';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(boardX + 14, boardY + 10, boardW - 28, boardH - 34);
+        
+        // Wooden grain highlights
+        ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(boardX + 14, boardY + 40); ctx.lineTo(boardX + boardW - 14, boardY + 40);
+        ctx.moveTo(boardX + 14, boardY + 80); ctx.lineTo(boardX + boardW - 14, boardY + 80);
+        ctx.moveTo(boardX + 14, boardY + 120); ctx.lineTo(boardX + boardW - 14, boardY + 120);
+        ctx.moveTo(boardX + 14, boardY + 160); ctx.lineTo(boardX + boardW - 14, boardY + 160);
+        ctx.stroke();
+        ctx.restore();
 
+        // 3D Logo Title 'PAUSED' above the board
+        this._draw3DText('PAUSED', cx, boardY - 26, 26);
+
+        // Level name and score inside the board
+        ctx.save();
+        ctx.font = '8px "Press Start 2P"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        ctx.fillStyle = '#000000';
+        ctx.fillText(levelName, cx + 1, boardY + 29);
+        ctx.fillStyle = '#70a1ff'; // Cyan
+        ctx.fillText(levelName, cx, boardY + 28);
+        
+        ctx.fillStyle = '#000000';
+        ctx.fillText(`Score: ${score}`, cx + 1, boardY + 45);
+        ctx.fillStyle = '#ffd32a'; // Gold
+        ctx.fillText(`Score: ${score}`, cx, boardY + 44);
+        ctx.restore();
+
+        // Pause buttons
         const items = ['Resume', 'Exit to Menu'];
-        const startY = py + 120;
-        const itemH = 42;
-        const btnW = 260;
+        const btnW = boardW - 48;
+        const btnX = boardX + 24;
+        const btnH = 32;
+        const btnGap = 10;
+        const btnStartY = boardY + 68;
+
         for (let i = 0; i < items.length; i++) {
-            this._menuBtn(cx - btnW / 2, startY + i * itemH, btnW, itemH - 2, items[i], i === (pauseSel || 0));
+            const by = btnStartY + i * (btnH + btnGap);
+            this._menuBtnNew(btnX, by, btnW, btnH, items[i], i === (pauseSel || 0));
         }
 
+        // Subtext reminder inside board
+        ctx.save();
+        ctx.font = '7px "Press Start 2P"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
         this.menuBlink += 0.04;
         const alpha = 0.4 + 0.4 * Math.sin(this.menuBlink * 4);
-        this.ctx.globalAlpha = alpha;
-        this._text('Up/Down - Select    Enter - Confirm', cx, py + ph - 20, this.fontSmall, C.textMuted);
-        this.ctx.globalAlpha = 1;
+        ctx.fillStyle = `rgba(215, 181, 148, ${alpha})`;
+        ctx.fillText('Up/Down - Select    Enter - Confirm', cx, boardY + boardH - 45);
+        ctx.restore();
     }
 
     renderLevelComplete(levelName, score, bonus) {
