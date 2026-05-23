@@ -321,7 +321,7 @@ export class UI {
         ctx.restore();
 
         const contentTop = 118;
-        const contentH = groundTop - contentTop - 10;
+        const contentH = H - footerH - contentTop - 10;
         const leftW = 220;
         const rightW = 320;
         const gap = 30;
