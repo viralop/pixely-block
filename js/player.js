@@ -279,16 +279,19 @@ export class Player {
 
             if (this.climbing || this.onRope) {
                 sheet = charData.idle;
-                frame = Math.floor(Date.now() / 150) % PA1Assets.getStripFrameCount(sheet, PA1_SRC);
-            } else if (!this.onGround) {
+                const count = PA1Assets.getStripFrameCount(sheet, PA1_SRC) || 1;
+                frame = Math.floor(Date.now() / 150) % count;
+            } else if (!this.onGround && Math.abs(this.vy) > 1.0) {
                 sheet = this.vy < -3 ? charData.jump : charData.fall;
                 frame = 0;
             } else if (Math.abs(this.vx) > 0.5) {
                 sheet = charData.run;
-                frame = Math.floor(Date.now() / 80) % PA1Assets.getStripFrameCount(sheet, PA1_SRC);
+                const count = PA1Assets.getStripFrameCount(sheet, PA1_SRC) || 1;
+                frame = Math.floor(Date.now() / 80) % count;
             } else {
                 sheet = charData.idle;
-                frame = Math.floor(Date.now() / 150) % PA1Assets.getStripFrameCount(sheet, PA1_SRC);
+                const count = PA1Assets.getStripFrameCount(sheet, PA1_SRC) || 1;
+                frame = Math.floor(Date.now() / 150) % count;
             }
 
             if (sheet) {
