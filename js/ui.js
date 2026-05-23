@@ -1,4 +1,4 @@
-import { drawTile, drawExtra, hasExtra } from './renderer.js';
+import { drawTile, drawExtra, hasExtra, RENDER_TILE } from './renderer.js';
 import * as PA1Assets from './pa1-assets.js';
 import * as PA1Sprites from './pa1-sprites.js';
 
