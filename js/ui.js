@@ -2,6 +2,9 @@ import { drawTile, drawExtra, hasExtra, RENDER_TILE } from './renderer.js';
 import * as PA1Assets from './pa1-assets.js';
 import * as PA1Sprites from './pa1-sprites.js';
 
+let menuBgCache = null;
+let menuBgCacheKey = null;
+
 export const INTRO_LINES = [
     'The kingdom has fallen silent.',
     'The Queen has been kidnapped.',
@@ -278,49 +281,15 @@ export class UI {
         const W = this.w, H = this.h;
         const cx = W / 2;
         const RT = RENDER_TILE;
-        const BT = 24 * 3;
 
-        const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
-        skyGrad.addColorStop(0, '#87ceeb');
-        skyGrad.addColorStop(0.4, '#5da1e1');
-        skyGrad.addColorStop(0.7, '#4a90d9');
-        skyGrad.addColorStop(1, '#3a6a9a');
-        ctx.fillStyle = skyGrad;
-        ctx.fillRect(0, 0, W, H);
-
-        this._drawMenuBgTiles(BT);
+        this._drawMenuLevelBg(W, H, RT);
 
         ctx.save();
-        ctx.globalAlpha = 0.12;
-        ctx.fillStyle = '#fff';
-        const t = Date.now() / 8000;
-        for (let i = 0; i < 8; i++) {
-            const bx = ((i * 140 + t * (30 + i * 12)) % (W + 300)) - 150;
-            const by = 15 + (i % 3) * 30;
-            const rw = 60 + (i % 4) * 20;
-            ctx.beginPath();
-            ctx.ellipse(bx, by, rw, 12 + (i % 3) * 4, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.ellipse(bx - rw * 0.4, by + 3, rw * 0.4, 8, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.ellipse(bx + rw * 0.35, by + 2, rw * 0.35, 7, 0, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        ctx.globalAlpha = 1;
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillRect(0, 0, W, H);
         ctx.restore();
 
-        this._drawMenuHills(H, BT);
-
         const footerH = 60;
-        const groundRows = 2;
-        const groundTop = H - footerH - RT * groundRows;
-        for (let row = 0; row < groundRows; row++) {
-            for (let col = 0; col < Math.ceil(W / RT) + 1; col++) {
-                drawTile(ctx, row === 0 ? 33 : 49, col * RT, groundTop + row * RT);
-            }
-        }
 
         ctx.save();
         ctx.font = 'bold 40px "Press Start 2P"';
@@ -412,59 +381,40 @@ export class UI {
         ctx.restore();
     }
 
-    _drawMenuBgTiles(bt) {
+    _drawMenuLevelBg(W, H, RT) {
         const ctx = this.ctx;
-        const bg = ctx.canvas;
-        const cols = Math.ceil(this.w / bt) + 2;
-        const rows = Math.ceil(this.h / bt) + 2;
-        const t = Date.now() / 25000;
+        const levelMap = [
+            [170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170],
+            [0,0,45,46,47,0,0,0,0,0,0,0,0,0,0,0],
+            [0,105,66,66,66,107,0,0,0,0,0,0,0,0,0,0,0],
+            [0,0,85,125,87,0,0,0,0,0,0,0,0,0,0,0,0],
+            [0,0,0,124,0,0,0,0,0,0,0,0,179,180,0,0,0],
+            [0,0,0,166,167,179,179,180,0,0,79,181,182,183,0,0,0],
+            [0,146,147,164,0,181,182,183,0,0,99,0,0,0,0,0,0],
+            [0,0,0,165,0,0,0,0,154,0,99,0,0,0,0,0,154],
+            [49,50,50,50,50,50,50,50,50,50,50,51,0,0,0,49],
+            [169,170,170,170,170,170,170,170,170,170,170,171,81,81,81,169]
+        ];
+        const rows = levelMap.length;
+        const cols = levelMap[0].length;
+        const totalW = cols * RT;
+        const totalH = rows * RT;
+        const offsetX = Math.round((W - totalW) / 2);
+        const offsetY = Math.round((H - totalH) / 2);
+
+        ctx.fillStyle = '#5da1e1';
+        ctx.fillRect(0, 0, W, H);
 
         ctx.save();
-        ctx.globalAlpha = 0.15;
         ctx.imageSmoothingEnabled = false;
-
-        const bgSheet = null;
-        try {
-            const bgImg = document.querySelector('img[src*="tilemap-backgrounds"]');
-        } catch(e) {}
-
-        ctx.globalAlpha = 1;
-        ctx.restore();
-    }
-
-    _drawMenuHills(H, bt) {
-        const ctx = this.ctx;
-        const W = this.w;
-        const footerH = 60;
-        const RT = RENDER_TILE;
-        const hillBase = H - footerH - RT * 2 - 40;
-
-        ctx.save();
-        ctx.fillStyle = '#4a9044';
-        ctx.globalAlpha = 0.4;
-        ctx.beginPath();
-        ctx.moveTo(0, H);
-        for (let x = 0; x <= W; x += 8) {
-            const h1 = Math.sin(x * 0.008) * 30 + Math.sin(x * 0.003 + 1) * 20;
-            ctx.lineTo(x, hillBase + 30 - h1);
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                const id = levelMap[r][c];
+                if (id > 0) {
+                    drawTile(ctx, id, offsetX + c * RT, offsetY + r * RT);
+                }
+            }
         }
-        ctx.lineTo(W, H);
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
-
-        ctx.save();
-        ctx.fillStyle = '#3a7a34';
-        ctx.globalAlpha = 0.35;
-        ctx.beginPath();
-        ctx.moveTo(0, H);
-        for (let x = 0; x <= W; x += 8) {
-            const h2 = Math.sin(x * 0.006 + 2) * 25 + Math.sin(x * 0.012 + 0.5) * 15;
-            ctx.lineTo(x, hillBase + 50 - h2);
-        }
-        ctx.lineTo(W, H);
-        ctx.closePath();
-        ctx.fill();
         ctx.restore();
     }
 
