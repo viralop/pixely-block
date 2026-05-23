@@ -1,4 +1,4 @@
-import { drawTile, drawExtra, hasExtra, RENDER_TILE } from './renderer.js';
+import { drawTile, drawExtra, hasExtra } from './renderer.js';
 import * as PA1Assets from './pa1-assets.js';
 import * as PA1Sprites from './pa1-sprites.js';
 
@@ -275,273 +275,136 @@ export class UI {
 
     renderMenu(menuSel, menuItems) {
         const ctx = this.ctx;
-        const W = this.w, H = this.h;
-        const RT = RENDER_TILE;
-        const cx = W / 2;
 
-        const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
-        skyGrad.addColorStop(0, '#87ceeb');
-        skyGrad.addColorStop(0.55, '#5da1e1');
-        skyGrad.addColorStop(0.7, '#4a8cc8');
-        skyGrad.addColorStop(1, '#3a6a9a');
-        ctx.fillStyle = skyGrad;
-        ctx.fillRect(0, 0, W, H);
+        const bgGrad = ctx.createLinearGradient(0, 0, 0, this.h);
+        bgGrad.addColorStop(0, '#2a1a0e');
+        bgGrad.addColorStop(0.5, '#3d2b1a');
+        bgGrad.addColorStop(1, '#1e120a');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, this.w, this.h);
 
-        this._drawMenuClouds();
-
-        const groundTop = H - RT * 3;
-        for (let col = 0; col < Math.ceil(W / RT) + 1; col++) {
-            drawTile(ctx, 33, col * RT, groundTop);
-        }
-        for (let row = 1; row < 3; row++) {
-            for (let col = 0; col < Math.ceil(W / RT) + 1; col++) {
-                drawTile(ctx, 49, col * RT, groundTop + row * RT);
-            }
-        }
-
-        this._drawMenuDecorations(groundTop);
-
-        const panelY = 80;
-        const panelH = groundTop - panelY - 20;
-        const leftW = 240;
-        const rightW = 360;
-        const gap = 30;
-        const totalW = leftW + gap + rightW;
-        const leftX = cx - totalW / 2;
-        const rightX = leftX + leftW + gap;
-
-        this._drawMenuCharacterPanel(leftX, panelY, leftW, panelH, groundTop);
-
-        this._drawMenuBoard(rightX, panelY, rightW, panelH, menuSel, menuItems);
-
-        this._drawMenuTitle(cx);
-
-        const footerY = H - RT - 10;
-        ctx.fillStyle = 'rgba(60,40,20,0.85)';
-        ctx.fillRect(0, footerY, W, RT + 10);
-        ctx.strokeStyle = '#8b6914';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(0, footerY);
-        ctx.lineTo(W, footerY);
-        ctx.stroke();
-        this._text('Up/Down: Select    Enter: Confirm    Esc: Back', cx, footerY + 16, '8px "Press Start 2P"', '#c8a832');
-        this._text('WASD/Arrows: Move    Space/J: Jump/Attack', cx, footerY + 34, '8px "Press Start 2P"', 'rgba(160,130,90,0.6)');
-    }
-
-    _drawMenuClouds() {
-        const ctx = this.ctx;
-        const t = Date.now() / 8000;
-        const cloudRows = [
-            { y: 30, scale: 0.7, speed: 1, count: 3 },
-            { y: 70, scale: 0.5, speed: 0.6, count: 4 },
-            { y: 15, scale: 0.4, speed: 1.3, count: 2 }
-        ];
         ctx.save();
-        for (const row of cloudRows) {
-            for (let i = 0; i < row.count; i++) {
-                const baseX = ((i / row.count + t * row.speed) % 1.4 - 0.2) * this.w;
-                const cw = 120 * row.scale;
-                const ch = 40 * row.scale;
-                ctx.fillStyle = 'rgba(255,255,255,0.35)';
-                ctx.beginPath();
-                ctx.ellipse(baseX, row.y, cw / 2, ch / 2, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.ellipse(baseX - cw * 0.3, row.y + ch * 0.1, cw * 0.35, ch * 0.35, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.ellipse(baseX + cw * 0.3, row.y + ch * 0.05, cw * 0.3, ch * 0.3, 0, 0, Math.PI * 2);
-                ctx.fill();
-            }
+        ctx.globalAlpha = 0.04;
+        for (let i = 0; i < this.h; i += 4) {
+            ctx.fillStyle = i % 8 === 0 ? '#000' : '#5a4020';
+            ctx.fillRect(0, i, this.w, 2);
         }
+        ctx.globalAlpha = 1;
         ctx.restore();
-    }
 
-    _drawMenuDecorations(groundTop) {
-        const ctx = this.ctx;
-        const RT = RENDER_TILE;
-        const positions = [
-            { tx: 1, ids: [169, 170, 33] },
-            { tx: 3, ids: [169, 49, 33] },
-            { tx: 11, ids: [169, 49, 33] },
-            { tx: 14, ids: [169, 170, 33] }
-        ];
-        for (const deco of positions) {
-            const x = deco.tx * RT;
-            for (let i = 0; i < deco.ids.length; i++) {
-                drawTile(ctx, deco.ids[i], x, groundTop - (deco.ids.length - i) * RT);
-            }
-        }
-
-        drawTile(ctx, 179, 2.5 * RT, groundTop - RT);
-        drawTile(ctx, 180, 13 * RT, groundTop - RT);
-    }
-
-    _drawMenuCharacterPanel(x, y, w, h, groundTop) {
-        const ctx = this.ctx;
-        const RT = RENDER_TILE;
-
-        ctx.save();
-        ctx.fillStyle = 'rgba(60,40,20,0.75)';
+        const cx = this.w / 2;
+        const panelX = cx - 210, panelY = 15, panelW = 420, panelH = this.h - 110;
+        ctx.fillStyle = 'rgba(62,42,28,0.85)';
         ctx.beginPath();
-        ctx.roundRect(x, y, w, h, 8);
+        ctx.roundRect(panelX, panelY, panelW, panelH, 10);
         ctx.fill();
+
         ctx.strokeStyle = '#8b6914';
         ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.roundRect(x + 3, y + 3, w - 6, h - 6, 6);
+        ctx.roundRect(panelX + 4, panelY + 4, panelW - 8, panelH - 8, 7);
         ctx.stroke();
+
+        ctx.strokeStyle = '#5a3a10';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(panelX + 10, panelY + 10, panelW - 20, panelH - 20, 5);
+        ctx.stroke();
+
+        ctx.fillStyle = '#8b6914';
+        const cornerSz = 8;
+        [[panelX + 14, panelY + 14], [panelX + panelW - 14 - cornerSz, panelY + 14],
+         [panelX + 14, panelY + panelH - 14 - cornerSz], [panelX + panelW - 14 - cornerSz, panelY + panelH - 14 - cornerSz]].forEach(([cx2, cy2]) => {
+            ctx.fillRect(cx2, cy2, cornerSz, cornerSz);
+        });
+
+        ctx.fillStyle = '#c8a832';
+        ctx.font = '24px "Press Start 2P"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('\u2726', cx, panelY + 25);
+
+        ctx.save();
+        ctx.shadowColor = 'rgba(200,168,50,0.5)';
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = '#f0d860';
+        ctx.font = '18px "Press Start 2P"';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText('PIXELY BLOCK', cx, panelY + 60);
+        ctx.shadowBlur = 0;
         ctx.restore();
 
-        const pedestalY = y + h - RT * 3;
-        const pedCx = x + w / 2;
-        drawTile(ctx, 33, pedCx - RT, pedestalY);
-        drawTile(ctx, 33, pedCx, pedestalY);
-        drawTile(ctx, 49, pedCx - RT, pedestalY + RT);
-        drawTile(ctx, 49, pedCx, pedestalY + RT);
-
-        const selChar = PA1Assets.getCharacter(localStorage.getItem('pa1_char') || 'ninja_frog');
-        if (selChar && selChar.idle) {
-            const srcSz = 32;
-            const dstSz = 96;
-            const charX = pedCx - dstSz / 2;
-            const charY = pedestalY - dstSz + 12;
-            ctx.imageSmoothingEnabled = false;
-            const frame = Math.floor(Date.now() / 150) % PA1Assets.getStripFrameCount(selChar.idle, srcSz);
-            ctx.drawImage(selChar.idle, frame * srcSz, 0, srcSz, srcSz, charX, charY, dstSz, dstSz);
-        }
-
-        const charIds = PA1Assets.getCharacterIds();
-        const charNames = PA1Assets.getCharNames();
-        const cIdx = charIds.indexOf(localStorage.getItem('pa1_char') || 'ninja_frog');
-        const cName = cIdx >= 0 ? charNames[cIdx] : 'Ninja Frog';
-
-        const nameY = pedestalY + RT * 2 + 8;
-        ctx.save();
-        ctx.fillStyle = 'rgba(60,40,20,0.85)';
-        const nameW = 160;
-        ctx.beginPath();
-        ctx.roundRect(pedCx - nameW / 2, nameY, nameW, 28, 4);
-        ctx.fill();
+        ctx.fillStyle = '#c8a832';
+        ctx.font = '14px "Press Start 2P"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('\u2726', cx - 80, panelY + 80);
+        ctx.fillText('\u2726', cx + 80, panelY + 80);
         ctx.strokeStyle = '#8b6914';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.roundRect(pedCx - nameW / 2 + 1, nameY + 1, nameW - 2, 26, 3);
-        ctx.stroke();
-        ctx.restore();
-        this._text(cName, pedCx, nameY + 14, '9px "Press Start 2P"', '#f0d860');
-    }
-
-    _drawMenuBoard(x, y, w, h, menuSel, menuItems) {
-        const ctx = this.ctx;
-
-        ctx.save();
-        ctx.fillStyle = 'rgba(90,60,30,0.8)';
-        ctx.beginPath();
-        ctx.roundRect(x, y, w, h, 6);
-        ctx.fill();
-        ctx.strokeStyle = '#6b4a1e';
-        ctx.lineWidth = 6;
-        ctx.beginPath();
-        ctx.roundRect(x + 3, y + 3, w - 6, h - 6, 4);
-        ctx.stroke();
-        ctx.strokeStyle = '#a07828';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.roundRect(x + 8, y + 8, w - 16, h - 16, 3);
+        ctx.moveTo(cx - 70, panelY + 80);
+        ctx.lineTo(cx + 70, panelY + 80);
         ctx.stroke();
 
-        const pegSz = 10;
-        ctx.fillStyle = '#8b6914';
-        [[x + 6, y + 6], [x + w - 6 - pegSz, y + 6],
-         [x + 6, y + h - 6 - pegSz], [x + w - 6 - pegSz, y + h - 6 - pegSz]].forEach(([px, py]) => {
-            ctx.fillRect(px, py, pegSz, pegSz);
-        });
-        ctx.restore();
+        this._text("A Knight's Journey to Save the Queen", cx, panelY + 102, this.fontSmall, '#c4a882');
+        this._text('Defeat the bosses every 5 levels!', cx, panelY + 120, this.fontSmall, 'rgba(160,130,90,0.6)');
 
-        const innerX = x + 24;
-        const innerW = w - 48;
-        const startY = y + 50;
-        const itemH = 46;
-        const btnW = innerW;
+        const selChar = PA1Assets.getCharacter(localStorage.getItem('pa1_char') || 'ninja_frog');
+        if (selChar && selChar.idle) {
+            const previewSz = 96;
+            const px = panelX - previewSz - 12;
+            const py = this.h / 2 - previewSz / 2;
+            ctx.save();
+            ctx.fillStyle = 'rgba(40,28,16,0.7)';
+            ctx.beginPath();
+            ctx.roundRect(px - 8, py - 8, previewSz + 16, previewSz + 16, 6);
+            ctx.fill();
+            ctx.strokeStyle = '#8b6914';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(px - 7, py - 7, previewSz + 14, previewSz + 14, 5);
+            ctx.stroke();
+            ctx.imageSmoothingEnabled = false;
+            const idleFrame = Math.floor(Date.now() / 150) % PA1Assets.getStripFrameCount(selChar.idle, 32);
+            ctx.drawImage(selChar.idle, idleFrame * 32, 0, 32, 32, px, py, previewSz, previewSz);
+            ctx.restore();
+            const charNames = PA1Assets.getCharNames();
+            const charIds = PA1Assets.getCharacterIds();
+            const cIdx = charIds.indexOf(localStorage.getItem('pa1_char') || 'ninja_frog');
+            const cName = cIdx >= 0 ? charNames[cIdx] : 'Ninja Frog';
+            this._text(cName, px + previewSz / 2, py + previewSz + 16, this.fontSmall, '#c8a832');
+        }
+
+        const startY = panelY + 150;
+        const itemH = 48;
+        const btnW = 260;
+        const btnX = cx - btnW / 2;
 
         this.menuItems = menuItems;
 
         for (let i = 0; i < menuItems.length; i++) {
             const item = menuItems[i];
-            const by = startY + i * itemH;
-            this._menuBoardBtn(innerX, by, btnW, itemH - 8, item.label, i === menuSel);
+            const y = startY + i * itemH;
+            if (item.type === 'header') {
+                this._text(item.label, cx, y + 14, '10px "Press Start 2P"', '#c8a832');
+                continue;
+            }
+            this._parchmentBtn(btnX, y, btnW, itemH - 6, item.label, i === menuSel);
         }
-    }
 
-    _menuBoardBtn(x, y, w, h, label, isSel) {
-        const ctx = this.ctx;
-        ctx.save();
-        if (isSel) {
-            ctx.fillStyle = 'rgba(200,168,50,0.25)';
-            ctx.beginPath();
-            ctx.roundRect(x, y, w, h, 4);
-            ctx.fill();
-            ctx.strokeStyle = '#f0d860';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.roundRect(x + 1, y + 1, w - 2, h - 2, 4);
-            ctx.stroke();
-
-            ctx.save();
-            ctx.shadowColor = 'rgba(255,200,50,0.6)';
-            ctx.shadowBlur = 8;
-            ctx.fillStyle = '#f0d860';
-            ctx.font = '10px "Press Start 2P"';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('\u25C6', x + 22, y + h / 2);
-            ctx.fillText('\u25C6', x + w - 22, y + h / 2);
-            ctx.restore();
-
-            this._text(label, x + w / 2, y + h / 2, '12px "Press Start 2P"', '#f0e8c0');
-        } else {
-            ctx.fillStyle = 'rgba(180,140,60,0.12)';
-            ctx.beginPath();
-            ctx.roundRect(x, y, w, h, 4);
-            ctx.fill();
-            ctx.strokeStyle = 'rgba(139,105,20,0.4)';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.roundRect(x + 1, y + 1, w - 2, h - 2, 4);
-            ctx.stroke();
-            this._text(label, x + w / 2, y + h / 2, '11px "Press Start 2P"', 'rgba(200,168,130,0.75)');
-        }
-        ctx.restore();
-    }
-
-    _drawMenuTitle(cx) {
-        const ctx = this.ctx;
-        const ty = 35;
-
-        ctx.save();
-        ctx.font = '28px "Press Start 2P"';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-
-        ctx.fillStyle = '#2a1a0a';
-        ctx.fillText('PIXELY BLOCK', cx + 3, ty + 3);
-        ctx.fillStyle = '#5a3a10';
-        ctx.fillText('PIXELY BLOCK', cx + 2, ty + 2);
-        ctx.fillStyle = '#a07828';
-        ctx.fillText('PIXELY BLOCK', cx + 1, ty + 1);
-
-        ctx.shadowColor = 'rgba(255,220,80,0.5)';
-        ctx.shadowBlur = 16;
-        ctx.fillStyle = '#f0d860';
-        ctx.fillText('PIXELY BLOCK', cx, ty);
-        ctx.shadowBlur = 8;
-        ctx.fillText('PIXELY BLOCK', cx, ty);
-        ctx.restore();
-
-        this._text("A Knight's Journey to Save the Queen", cx, ty + 28, '7px "Press Start 2P"', 'rgba(255,248,220,0.8)');
-        this._text('Defeat the bosses every 5 levels!', cx, ty + 43, '7px "Press Start 2P"', 'rgba(255,248,220,0.5)');
+        const controlsY = this.h - 55;
+        ctx.fillStyle = 'rgba(40,28,16,0.8)';
+        ctx.beginPath();
+        ctx.roundRect(cx - 210, controlsY - 14, 420, 50, 6);
+        ctx.fill();
+        ctx.strokeStyle = '#5a3a10';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(cx - 209, controlsY - 13, 418, 48, 5);
+        ctx.stroke();
+        this._text('Up/Down - Select    Enter - Confirm', cx, controlsY + 4, this.fontSmall, 'rgba(196,168,130,0.7)');
+        this._text('WASD/Arrows - Move   Space/J - Jump/Attack', cx, controlsY + 24, this.fontSmall, 'rgba(160,130,90,0.5)');
     }
 
     _parchmentBtn(x, y, w, h, label, isSel) {
