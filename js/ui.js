@@ -1,4 +1,6 @@
 import { drawTile, drawExtra, hasExtra } from './renderer.js';
+import * as PA1Assets from './pa1-assets.js';
+import * as PA1Sprites from './pa1-sprites.js';
 
 export const INTRO_LINES = [
     'The kingdom has fallen silent.',
@@ -185,7 +187,7 @@ export class UI {
         ctx.restore();
     }
 
-    renderHUD(player, score, levelName, levelNum, totalLevels, boss, hasKey, currentLives) {
+    renderHUD(player, score, levelName, levelNum, totalLevels, boss, hasKey, currentLives, fruitCount) {
         if (!player) return;
         const ctx = this.ctx;
         const pad = 12;
@@ -223,6 +225,32 @@ export class UI {
         this._text(`SCORE: ${score}`, infoX - 110, pad + 14, this.fontSmall, C.gold);
         this._text(`${levelName}`, infoX - 110, pad + 36, this.fontSmall, C.cyan);
         ctx.restore();
+
+        const levelBadge = PA1Assets.getMenuLevel(levelNum);
+        if (levelBadge) {
+            ctx.save();
+            ctx.imageSmoothingEnabled = false;
+            const bx = infoX - 180, by = pad + 48;
+            ctx.drawImage(levelBadge, 0, 0, levelBadge.width, levelBadge.height, bx, by, levelBadge.width * 2.5, levelBadge.height * 2.5);
+            ctx.restore();
+        }
+
+        if (fruitCount !== undefined && fruitCount > 0) {
+            const fruitSheet = PA1Assets.getFruit('apple');
+            if (fruitSheet) {
+                ctx.save();
+                ctx.imageSmoothingEnabled = false;
+                const fx = pad + maxHearts * 22 + 40;
+                const fy = pad + 8;
+                ctx.drawImage(fruitSheet, 0, 0, 32, 32, fx, fy, 20, 20);
+                ctx.restore();
+            }
+            ctx.save();
+            ctx.shadowColor = 'rgba(0,0,0,0.8)';
+            ctx.shadowBlur = 4;
+            this._text(`x${fruitCount}`, pad + maxHearts * 22 + 64, pad + 18, this.fontSmall, '#ff6b9d');
+            ctx.restore();
+        }
 
         if (boss && boss.alive) {
             this.menuBlink += 0.04;
@@ -321,6 +349,14 @@ export class UI {
 
         this._text("A Knight's Journey to Save the Queen", cx, panelY + 102, this.fontSmall, '#c4a882');
         this._text('Defeat the bosses every 5 levels!', cx, panelY + 120, this.fontSmall, 'rgba(160,130,90,0.6)');
+
+        const selChar = PA1Assets.getCharacter(localStorage.getItem('pa1_char') || 'ninja_frog');
+        if (selChar && selChar.idle) {
+            const previewSz = 48;
+            const px = cx - previewSz / 2;
+            const py = panelY + 132;
+            PA1Assets.drawStripFrame(ctx, selChar.idle, Math.floor(Date.now() / 150) % PA1Assets.getStripFrameCount(selChar.idle, 32), 32, 32, px, py, previewSz, previewSz, false);
+        }
 
         const startY = panelY + 150;
         const itemH = 48;

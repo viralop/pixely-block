@@ -1,5 +1,6 @@
 import { RENDER_CHAR, RENDER_TILE, SCALE, CHAR_SIZE, drawExtra, hasExtra } from './renderer.js';
 import { moveEntity, isSolid, isLadder, isRope, isHook, getTileAt, HAZARD_IDS, COIN_IDS, HEART_IDS, getTilesInRegion, rectOverlap } from './collision.js';
+import * as PA1Assets from './pa1-assets.js';
 
 const GRAVITY = 0.48;
 const JUMP_FORCE = -14;
@@ -27,9 +28,10 @@ const CHAR_IDS = {
 };
 
 export class Player {
-    constructor(spawnX, spawnY) {
+    constructor(spawnX, spawnY, characterId) {
         this.spawnX = spawnX;
         this.spawnY = spawnY;
+        this.characterId = characterId || 'ninja_frog';
         this.reset();
     }
 
@@ -53,6 +55,7 @@ export class Player {
         this.dead = false;
         this.animFrame = 0;
         this.animTimer = 0;
+        this.idleAnimFrame = 0;
         this.runFrames = [CHAR_IDS.run1, CHAR_IDS.run2, CHAR_IDS.run3];
         this.didJump = false;
         this.didAttack = false;
@@ -111,6 +114,9 @@ export class Player {
             this.animTimer++;
             if (this.animTimer >= 6) { this.animTimer = 0; this.animFrame = (this.animFrame + 1) % this.runFrames.length; }
         } else { this.animTimer = 0; this.animFrame = 0; }
+        if (Math.abs(this.vx) < 0.5 && this.onGround) {
+            this.idleAnimFrame = (this.idleAnimFrame + 1) % 110;
+        }
         this._checkGrabLadder(input, solidMap, tileW, tileH);
         this._checkGrabRope(input, solidMap, tileW, tileH);
         if (this.y > solidMap.length * tileH + 100) {
@@ -268,7 +274,43 @@ export class Player {
         const sz = RENDER_CHAR + 1;
         const flip = this.facing < 0;
         const isAttacking = this.attacking;
-        if (hasExtra('knight_idle')) {
+
+        const charId = this.characterId || 'ninja_frog';
+        const charData = PA1Assets.getCharacter(charId);
+
+        if (charData && (charData.idle || charData.run)) {
+            let sheet, frameW = 32, frameH = 32;
+            let frame = 0;
+
+            if (this.climbing || this.onRope) {
+                sheet = charData.idle;
+                frame = Math.floor(this.animTimer / 10) % PA1Assets.getStripFrameCount(sheet, frameW);
+            } else if (!this.onGround) {
+                if (this.vy < -3) {
+                    sheet = charData.jump;
+                    frame = 0;
+                } else {
+                    sheet = charData.fall;
+                    frame = 0;
+                }
+            } else if (Math.abs(this.vx) > 0.5) {
+                sheet = charData.run;
+                const total = PA1Assets.getStripFrameCount(sheet, frameW);
+                frame = this.animFrame % total;
+            } else {
+                sheet = charData.idle;
+                const total = PA1Assets.getStripFrameCount(sheet, frameW);
+                frame = this.idleAnimFrame % total;
+            }
+
+            if (sheet) {
+                PA1Assets.drawStripFrame(ctx, sheet, frame, frameW, frameH, drawX, drawY, sz, sz, flip);
+            }
+
+            if (isAttacking) {
+                this._renderWeapon(ctx, drawX, drawY, sz);
+            }
+        } else if (hasExtra('knight_idle')) {
             let key = 'knight_idle';
             if (this.climbing) key = 'knight_idle';
             else if (this.onRope) key = 'knight_idle';
@@ -279,13 +321,13 @@ export class Player {
                 this._renderWeapon(ctx, drawX, drawY, sz);
             }
         } else {
-            let charId;
-            if (this.climbing) charId = CHAR_IDS.jump;
-            else if (this.onRope) charId = CHAR_IDS.idle;
-            else if (!this.onGround) charId = this.vy < 0 ? CHAR_IDS.jump : CHAR_IDS.fall;
-            else if (Math.abs(this.vx) > 0.5) charId = this.runFrames[this.animFrame];
-            else charId = CHAR_IDS.idle;
-            drawCharFn(ctx, charId, drawX, drawY, flip);
+            let charId2;
+            if (this.climbing) charId2 = CHAR_IDS.jump;
+            else if (this.onRope) charId2 = CHAR_IDS.idle;
+            else if (!this.onGround) charId2 = this.vy < 0 ? CHAR_IDS.jump : CHAR_IDS.fall;
+            else if (Math.abs(this.vx) > 0.5) charId2 = this.runFrames[this.animFrame];
+            else charId2 = CHAR_IDS.idle;
+            drawCharFn(ctx, charId2, drawX, drawY, flip);
             if (isAttacking) {
                 this._renderWeapon(ctx, drawX, drawY, sz);
             }

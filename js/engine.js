@@ -6,7 +6,9 @@ import { Player } from './player.js';
 import { Enemy } from './enemy.js';
 import { Boss, getBossDef, isBossLevel } from './boss.js';
 import { getLevel, getTotalLevels, loadCustomLevels } from './levels.js';
-import { rectOverlap, HAZARD_IDS, COIN_IDS, HEART_IDS, EXIT_IDS, SPRING_IDS, CHECKPOINT_IDS, KEY_IDS, LOCK_IDS, getTilesInRegion, getTileAt, isSolid } from './collision.js';
+import { rectOverlap, HAZARD_IDS, COIN_IDS, HEART_IDS, EXIT_IDS, SPRING_IDS, CHECKPOINT_IDS, KEY_IDS, LOCK_IDS, FRUIT_IDS, BOX_IDS, TRAP_IDS, PA1_CHECKPOINT_IDS, getTilesInRegion, getTileAt, isSolid } from './collision.js';
+import * as PA1Sprites from './pa1-sprites.js';
+import * as PA1Assets from './pa1-assets.js';
 
 const FIXED_DT = 1000 / 60;
 const SPRING_FORCE = -16;
@@ -61,11 +63,19 @@ export class Game {
         this.masterVol = 0.7;
         this.sfxVol = 0.8;
         this.musicVol = 0.6;
+
+        this.selectedCharacter = localStorage.getItem('pa1_char') || 'ninja_frog';
+        this.fruitCollections = [];
+        this.boxStates = {};
+        this.pa1CheckpointAnims = {};
+        this.trapAnimTimer = 0;
+        this.dustParticles = [];
     }
 
     _buildMenu() {
         this.menuItems = [
             { type: 'play', label: 'Start Game', action: () => this._startNewGame() },
+            { type: 'chars', label: 'Character Select', action: () => { this.state = 'CHAR_SELECT'; this.charSelIdx = this._getCharIdx(); this._charHeld = true; } },
             { type: 'editor', label: 'Editor', action: () => { window.location.href = 'editor.html'; } },
             { type: 'options', label: 'Options', action: () => { this.state = 'OPTIONS'; this.optSel = 0; } },
             { type: 'quit', label: 'Quit Game', action: () => { window.close(); } }
@@ -73,10 +83,17 @@ export class Game {
         if (this.menuSel >= this.menuItems.length) this.menuSel = 0;
     }
 
+    _getCharIdx() {
+        const ids = PA1Assets.getCharacterIds();
+        const idx = ids.indexOf(this.selectedCharacter);
+        return idx >= 0 ? idx : 0;
+    }
+
     async start() {
         this.ui.renderLoading();
         try {
             await Sprites.loadAll();
+            await Sprites.loadPA1Assets();
             await loadCustomLevels();
         } catch (e) {
             const ctx = this.ctx;
@@ -142,6 +159,9 @@ export class Game {
                 break;
             case 'OPTIONS':
                 this._updateOptions();
+                break;
+            case 'CHAR_SELECT':
+                this._updateCharSelect();
                 break;
             case 'PLAYING':
                 if (this.input.escape) { this.state = 'PAUSED'; this.pauseSel = 0; this.pauseHeld = true; break; }
@@ -274,6 +294,36 @@ export class Game {
         }
     }
 
+    _updateCharSelect() {
+        const ids = PA1Assets.getCharacterIds();
+        if (this._charHeld) {
+            if (!this.input.isDown('ArrowLeft') && !this.input.isDown('ArrowRight') && !this.input.isDown('KeyA') && !this.input.isDown('KeyD') && !this.input.enter && !this.input.escape) {
+                this._charHeld = false;
+            }
+            return;
+        }
+        const left = this.input.isDown('ArrowLeft') || this.input.isDown('KeyA');
+        const right = this.input.isDown('ArrowRight') || this.input.isDown('KeyD');
+        if (left || right) {
+            this._charHeld = true;
+            this.charSelIdx = (this.charSelIdx + (right ? 1 : -1) + ids.length) % ids.length;
+        }
+        if (this.input.enter) {
+            this._charHeld = true;
+            this.selectedCharacter = ids[this.charSelIdx];
+            localStorage.setItem('pa1_char', this.selectedCharacter);
+            this.state = 'MENU';
+            this._buildMenu();
+            this._menuHeld = true;
+        }
+        if (this.input.escape) {
+            this._charHeld = true;
+            this.state = 'MENU';
+            this._buildMenu();
+            this._menuHeld = true;
+        }
+    }
+
     _startNewGame() {
         this.score = 0;
         this.currentLives = 3;
@@ -301,9 +351,15 @@ export class Game {
         this.triggeredSprings = new Map();
         this.activatedCheckpoints = new Set();
 
+        this.fruitCollections = [];
+        this.fruitCollectionTimers = {};
+        this.boxStates = {};
+        this.pa1CheckpointAnims = {};
+        PA1Sprites.resetTrapAnims();
+
         const sx = level.spawn.tx * Sprites.RENDER_TILE;
         const sy = level.spawn.ty * Sprites.RENDER_TILE;
-        this.player = new Player(sx, sy);
+        this.player = new Player(sx, sy, this.selectedCharacter);
 
         this.enemies = (level.entities || []).filter(e => !e.type.startsWith('boss_')).map(e => {
             return new Enemy(e.type, e.tx, e.ty, e.patrolL, e.patrolR, Sprites.RENDER_TILE, Sprites.RENDER_TILE);
@@ -348,9 +404,15 @@ export class Game {
         this.triggeredSprings = new Map();
         this.activatedCheckpoints = new Set();
 
+        this.fruitCollections = [];
+        this.fruitCollectionTimers = {};
+        this.boxStates = {};
+        this.pa1CheckpointAnims = {};
+        PA1Sprites.resetTrapAnims();
+
         const sx = level.spawn.tx * Sprites.RENDER_TILE;
         const sy = level.spawn.ty * Sprites.RENDER_TILE;
-        this.player = new Player(sx, sy);
+        this.player = new Player(sx, sy, this.selectedCharacter);
 
         this.enemies = level.entities.map(e => {
             return new Enemy(e.type, e.tx, e.ty, e.patrolL, e.patrolR, Sprites.RENDER_TILE, Sprites.RENDER_TILE);
@@ -485,6 +547,41 @@ export class Game {
             this.coinAnimId = this.coinAnimId === 179 ? 180 : 179;
             this.checkpointAnimId = this.checkpointAnimId === 139 ? 140 : 139;
             this.waterAnimFrame = (this.waterAnimFrame + 1) % 3;
+        }
+
+        PA1Sprites.updateAnimations();
+
+        this.trapAnimTimer++;
+
+        for (const key of Object.keys(this.pa1CheckpointAnims)) {
+            this.pa1CheckpointAnims[key] = (this.pa1CheckpointAnims[key] + 1) % 1000;
+        }
+
+        if (this.fruitCollectionTimers) {
+            for (const key of Object.keys(this.fruitCollectionTimers)) {
+                this.fruitCollectionTimers[key]--;
+                if (this.fruitCollectionTimers[key] <= 0) {
+                    delete this.fruitCollectionTimers[key];
+                    const idx = this.fruitCollections.indexOf(key);
+                    if (idx >= 0) this.fruitCollections.splice(idx, 1);
+                }
+            }
+        }
+
+        for (const key of Object.keys(this.boxStates)) {
+            const bs = this.boxStates[key];
+            if (bs.state === 'hit' || bs.state === 'break') {
+                bs.frame++;
+                if (bs.state === 'hit' && bs.frame > 4) {
+                    bs.state = 'break';
+                    bs.frame = 0;
+                } else if (bs.state === 'break' && bs.frame > 5) {
+                    const parts = key.split(',');
+                    const r = parseInt(parts[0]), c = parseInt(parts[1]);
+                    if (this.level.map[r]) this.level.map[r][c] = 0;
+                    delete this.boxStates[key];
+                }
+            }
         }
 
         this._checkSpringBounce();
@@ -732,6 +829,39 @@ export class Game {
                     this.player.spawnY = t.row * Sprites.RENDER_TILE;
                     this._emitParticles(t.x + Sprites.RENDER_TILE / 2, t.y + Sprites.RENDER_TILE / 2, '#4fc3f7', 10, 2, -3);
                 }
+            } else if (FRUIT_IDS && FRUIT_IDS.has(t.tileId)) {
+                const key = `${t.row},${t.col}`;
+                if (!this.fruitCollections.includes(key)) {
+                    this.fruitCollections.push(key);
+                    if (!this.fruitCollectionTimers) this.fruitCollectionTimers = {};
+                    this.fruitCollectionTimers[key] = 24;
+                    this._addScore(15);
+                    this.audio.coin();
+                    this._emitParticles(t.x + Sprites.RENDER_TILE / 2, t.y + Sprites.RENDER_TILE / 2, '#ff6b9d', 8, 2, -3);
+                }
+            } else if (BOX_IDS && BOX_IDS.has(t.tileId)) {
+                const key = `${t.row},${t.col}`;
+                if (!this.boxStates[key]) {
+                    this.boxStates[key] = { state: 'hit', frame: 0 };
+                    this.audio.hit();
+                    this._emitParticles(t.x + Sprites.RENDER_TILE / 2, t.y + Sprites.RENDER_TILE / 2, '#c8a832', 6, 2, -2);
+                }
+            } else if (PA1_CHECKPOINT_IDS && PA1_CHECKPOINT_IDS.has(t.tileId)) {
+                const key = `${t.col},${t.row}`;
+                if (!this.activatedCheckpoints.has(key)) {
+                    this.activatedCheckpoints.add(key);
+                    this.pa1CheckpointAnims[key] = 0;
+                    this.player.spawnX = t.col * Sprites.RENDER_TILE + (Sprites.RENDER_TILE - this.player.w) / 2;
+                    this.player.spawnY = t.row * Sprites.RENDER_TILE;
+                    this.audio.coin();
+                    this._emitParticles(t.x + Sprites.RENDER_TILE / 2, t.y + Sprites.RENDER_TILE / 2, '#4fc3f7', 10, 2, -3);
+                }
+            } else if (TRAP_IDS && TRAP_IDS.has(t.tileId)) {
+                if (this.player.takeDamage(12)) {
+                    this.player.knockback(this.player.x + this.player.w / 2);
+                    this.audio.spike();
+                    this._emitParticles(this.player.getCenterX(), this.player.getCenterY(), '#ff4444', 8, 3, -2);
+                }
             } else if (KEY_IDS.has(t.tileId)) {
                 this.level.map[t.row][t.col] = 0;
                 this.hasKey = true;
@@ -847,12 +977,15 @@ export class Game {
             case 'OPTIONS':
                 this.ui.renderOptions(this.optSel, this.masterVol, this.sfxVol, this.musicVol);
                 break;
+            case 'CHAR_SELECT':
+                this._renderCharSelect();
+                break;
             case 'PLAYING':
             case 'PAUSED':
             case 'BOSS_INTRO':
                 this._renderWorld();
                 this._renderParticles();
-                this.ui.renderHUD(this.player, this.score, this.level.name, this.levelIdx + 1, getTotalLevels(), this.boss, this.hasKey, this.currentLives);
+                this.ui.renderHUD(this.player, this.score, this.level.name, this.levelIdx + 1, getTotalLevels(), this.boss, this.hasKey, this.currentLives, this.fruitCollections.length);
                 if (this.state === 'PAUSED') this.ui.renderPause(this.score, this.level.name, this.pauseSel);
                 if (this.state === 'BOSS_INTRO') this.ui.renderBossIntro(this.boss, this.bossIntroTimer);
                 if (this.lifePopupTimer > 0) this.ui.renderLifePopup(this.lifePopupTimer);
@@ -860,7 +993,7 @@ export class Game {
             case 'LEVEL_COMPLETE':
                 this._renderWorld();
                 this._renderParticles();
-                this.ui.renderHUD(this.player, this.score, this.level.name, this.levelIdx + 1, getTotalLevels(), this.boss, this.hasKey, this.currentLives);
+                this.ui.renderHUD(this.player, this.score, this.level.name, this.levelIdx + 1, getTotalLevels(), this.boss, this.hasKey, this.currentLives, this.fruitCollections.length);
                 this.ui.renderLevelComplete(this.level.name, this.score, 200);
                 break;
             case 'GAME_OVER':
@@ -882,13 +1015,17 @@ export class Game {
         const lvl = this.level;
         const cx = Math.round(this.camX);
         const cy = Math.round(this.camY);
+        const RT = Sprites.RENDER_TILE;
 
-        Sprites.drawBgParallax(ctx, this.W, this.H, this.camX, this.camY, lvl.bgColor);
+        const bgDrawn = lvl.bgImage ? PA1Sprites.drawBackground(ctx, lvl.bgImage, this.W, this.H, this.camX, this.camY) : false;
+        if (!bgDrawn) {
+            Sprites.drawBgParallax(ctx, this.W, this.H, this.camX, this.camY, lvl.bgColor);
+        }
 
-        const startCol = Math.max(0, Math.floor(cx / Sprites.RENDER_TILE));
-        const endCol = Math.min(lvl.width - 1, Math.ceil((cx + this.W) / Sprites.RENDER_TILE));
-        const startRow = Math.max(0, Math.floor(cy / Sprites.RENDER_TILE));
-        const endRow = Math.min(lvl.height - 1, Math.ceil((cy + this.H) / Sprites.RENDER_TILE));
+        const startCol = Math.max(0, Math.floor(cx / RT));
+        const endCol = Math.min(lvl.width - 1, Math.ceil((cx + this.W) / RT));
+        const startRow = Math.max(0, Math.floor(cy / RT));
+        const endRow = Math.min(lvl.height - 1, Math.ceil((cy + this.H) / RT));
 
         for (let row = startRow; row <= endRow; row++) {
             for (let col = startCol; col <= endCol; col++) {
@@ -908,18 +1045,38 @@ export class Game {
                 if (id === 61 || id === 81) {
                     id = this.waterAnimFrame === 0 ? 61 : 81;
                 }
-                if (id > 0) {
-                    Sprites.drawTile(ctx, id, col * Sprites.RENDER_TILE - cx, row * Sprites.RENDER_TILE - cy);
+
+                if (FRUIT_IDS && FRUIT_IDS.has(id)) {
+                    const fruitName = this._fruitIdToName(id);
+                    if (fruitName) {
+                        const collectKey = `${row},${col}`;
+                        if (!this.fruitCollections.includes(collectKey)) {
+                            PA1Sprites.drawFruit(ctx, fruitName, col * RT - cx, row * RT - cy);
+                        }
+                    }
+                } else if (BOX_IDS && BOX_IDS.has(id)) {
+                    const boxKey = `${row},${col}`;
+                    const bState = this.boxStates[boxKey] || { state: 'idle', frame: 0 };
+                    const boxType = this._boxIdToType(id);
+                    PA1Sprites.drawBox(ctx, boxType, bState.state, col * RT - cx, row * RT - cy, bState.frame);
+                } else if (PA1_CHECKPOINT_IDS && PA1_CHECKPOINT_IDS.has(id)) {
+                    const cpKey = `${row},${col}`;
+                    const active = this.activatedCheckpoints.has(cpKey);
+                    const cpAnim = this.pa1CheckpointAnims[cpKey] || 0;
+                    PA1Sprites.drawCheckpoint(ctx, 'checkpoint', active, col * RT - cx, row * RT - cy, cpAnim);
+                } else if (TRAP_IDS && TRAP_IDS.has(id)) {
+                    this._renderTrap(ctx, id, col * RT - cx, row * RT - cy);
+                } else if (id > 0) {
+                    Sprites.drawTile(ctx, id, col * RT - cx, row * RT - cy);
                 }
             }
         }
 
         if (lvl.decorations) {
             for (const d of lvl.decorations) {
-                const dx = d.tx * Sprites.RENDER_TILE - cx;
-                const dy = d.ty * Sprites.RENDER_TILE - cy;
-                if (dx > -Sprites.RENDER_TILE && dx < this.W + Sprites.RENDER_TILE &&
-                    dy > -Sprites.RENDER_TILE && dy < this.H + Sprites.RENDER_TILE) {
+                const dx = d.tx * RT - cx;
+                const dy = d.ty * RT - cy;
+                if (dx > -RT && dx < this.W + RT && dy > -RT && dy < this.H + RT) {
                     Sprites.drawTile(ctx, d.id, dx, dy);
                 }
             }
@@ -931,14 +1088,137 @@ export class Game {
 
         for (const mp of this.movingPlatforms) {
             for (const t of mp.tiles) {
-                const tx = t.tx * Sprites.RENDER_TILE - mp.baseX + mp.x - cx;
-                const ty = t.ty * Sprites.RENDER_TILE - mp.baseY + mp.y - cy;
-                if (tx > -Sprites.RENDER_TILE && tx < this.W + Sprites.RENDER_TILE &&
-                    ty > -Sprites.RENDER_TILE && ty < this.H + Sprites.RENDER_TILE) {
+                const tx = t.tx * RT - mp.baseX + mp.x - cx;
+                const ty = t.ty * RT - mp.baseY + mp.y - cy;
+                if (tx > -RT && tx < this.W + RT && ty > -RT && ty < this.H + RT) {
                     Sprites.drawTile(ctx, t.id, tx, ty);
                 }
             }
         }
+
+        for (const fc of this.fruitCollections) {
+            const parts = fc.split(',');
+            const fr = parseInt(parts[0]), fcol = parseInt(parts[1]);
+            const fx = fcol * RT - cx;
+            const fy = fr * RT - cy;
+            const fTimer = this.fruitCollectionTimers ? this.fruitCollectionTimers[fc] : 0;
+            if (fTimer > 0) {
+                PA1Sprites.drawFruitCollected(ctx, fx, fy, Math.min(5, 6 - Math.ceil(fTimer / 4)));
+            }
+        }
+    }
+
+    _renderTrap(ctx, id, screenX, screenY) {
+        if (id >= 4100 && id <= 4102) {
+            PA1Sprites.drawTrapFire(ctx, true, screenX, screenY);
+        } else if (id === 4103) {
+            PA1Sprites.drawTrapFire(ctx, false, screenX, screenY);
+        } else if (id === 4110) {
+            PA1Sprites.drawTrapSaw(ctx, true, screenX, screenY);
+        } else if (id === 4111) {
+            PA1Sprites.drawTrapSaw(ctx, false, screenX, screenY);
+        } else if (id === 4120) {
+            PA1Sprites.drawTrampoline(ctx, false, screenX, screenY, 0);
+        } else if (id === 4121) {
+            const frame = PA1Sprites.getTrapAnimFrame('trampoline', 4) % 8;
+            PA1Sprites.drawTrampoline(ctx, true, screenX, screenY, frame);
+        }
+    }
+
+    _fruitIdToName(id) {
+        const map = { 5001: 'apple', 5002: 'bananas', 5003: 'cherries', 5004: 'kiwi', 5005: 'melon', 5006: 'orange', 5007: 'pineapple', 5008: 'strawberry' };
+        return map[id] || null;
+    }
+
+    _fruitNameToId(name) {
+        const map = { apple: 5001, bananas: 5002, cherries: 5003, kiwi: 5004, melon: 5005, orange: 5006, pineapple: 5007, strawberry: 5008 };
+        return map[name] || 0;
+    }
+
+    _boxIdToType(id) {
+        if (id >= 5020 && id <= 5029) return 'box1';
+        if (id >= 5030 && id <= 5039) return 'box2';
+        if (id >= 5040 && id <= 5049) return 'box3';
+        return 'box1';
+    }
+
+    _renderCharSelect() {
+        const ctx = this.ctx;
+        const cx = this.W / 2, cy = this.H / 2;
+
+        const bgGrad = ctx.createLinearGradient(0, 0, 0, this.H);
+        bgGrad.addColorStop(0, '#0a0814');
+        bgGrad.addColorStop(1, '#141028');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, this.W, this.H);
+
+        ctx.save();
+        ctx.shadowColor = 'rgba(200,168,50,0.5)';
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = '#f0d860';
+        ctx.font = '18px "Press Start 2P"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('SELECT CHARACTER', cx, 60);
+        ctx.shadowBlur = 0;
+        ctx.restore();
+
+        const ids = PA1Assets.getCharacterIds();
+        const names = PA1Assets.getCharNames();
+        const total = ids.length;
+        const cardW = 150, cardH = 200, gap = 30;
+        const totalW = total * cardW + (total - 1) * gap;
+        const startX = cx - totalW / 2;
+        const cardY = cy - cardH / 2;
+
+        for (let i = 0; i < total; i++) {
+            const x = startX + i * (cardW + gap);
+            const isSel = i === this.charSelIdx;
+
+            ctx.save();
+            if (isSel) {
+                ctx.shadowColor = 'rgba(255,200,50,0.6)';
+                ctx.shadowBlur = 20;
+                ctx.fillStyle = 'rgba(60,40,20,0.9)';
+                ctx.strokeStyle = '#ffc840';
+                ctx.lineWidth = 3;
+            } else {
+                ctx.fillStyle = 'rgba(20,15,30,0.8)';
+                ctx.strokeStyle = '#3a2a4a';
+                ctx.lineWidth = 1;
+            }
+            ctx.beginPath();
+            ctx.roundRect(x, cardY, cardW, cardH, 8);
+            ctx.fill();
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            ctx.restore();
+
+            const charData = PA1Assets.getCharacter(ids[i]);
+            if (charData && charData.idle) {
+                const sheet = charData.idle;
+                const frameW = 32;
+                const frame = Math.floor(this.frameCount / 10) % PA1Assets.getStripFrameCount(sheet, frameW);
+                const renderSz = cardW * 0.7;
+                PA1Assets.drawStripFrame(ctx, sheet, frame, frameW, 32, x + (cardW - renderSz) / 2, cardY + 30, renderSz, renderSz, false);
+            }
+
+            ctx.fillStyle = isSel ? '#f0d860' : '#7a6a8a';
+            ctx.font = '8px "Press Start 2P"';
+            ctx.textAlign = 'center';
+            ctx.fillText(names[i], x + cardW / 2, cardY + cardH - 25);
+
+            if (isSel) {
+                ctx.fillStyle = '#4caf50';
+                ctx.font = '8px "Press Start 2P"';
+                ctx.fillText('SELECTED', x + cardW / 2, cardY + cardH - 8);
+            }
+        }
+
+        ctx.fillStyle = 'rgba(196,168,130,0.5)';
+        ctx.font = '8px "Press Start 2P"';
+        ctx.textAlign = 'center';
+        ctx.fillText('Left/Right - Select    Enter - Confirm    Escape - Back', cx, this.H - 30);
     }
 
     _renderParticles() {

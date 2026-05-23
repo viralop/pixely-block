@@ -74,6 +74,7 @@ const SOLID_SET = new Set([
 
 export function isSolid(tileId, customSolidMap, row, col) {
     if (KEY_IDS.has(tileId) || COIN_IDS.has(tileId) || HEART_IDS.has(tileId) || EXIT_IDS.has(tileId) || HAZARD_IDS.has(tileId) || SPRING_IDS.has(tileId) || LADDER_IDS.has(tileId) || ROPE_IDS.has(tileId) || HOOK_IDS.has(tileId) || CHECKPOINT_IDS.has(tileId)) return false;
+    if (FRUIT_IDS.has(tileId) || BOX_IDS.has(tileId) || PA1_CHECKPOINT_IDS.has(tileId) || TRAP_HAZARD_IDS.has(tileId)) return false;
     if (customSolidMap) {
         return !!(customSolidMap[row] && customSolidMap[row][col]);
     }
@@ -96,6 +97,25 @@ export function isLadder(tileId) { return LADDER_IDS.has(tileId); }
 export function isRope(tileId) { return ROPE_IDS.has(tileId) || HOOK_IDS.has(tileId); }
 export function isHook(tileId) { return HOOK_IDS.has(tileId); }
 export function isSpring(tileId) { return SPRING_IDS.has(tileId); }
+
+export const FRUIT_IDS = new Set([5001, 5002, 5003, 5004, 5005, 5006, 5007, 5008]);
+export const BOX_IDS = new Set([
+    5020, 5021, 5022,
+    5030, 5031, 5032,
+    5040, 5041, 5042
+]);
+export const PA1_CHECKPOINT_IDS = new Set([5050]);
+export const TRAP_HAZARD_IDS = new Set([4100, 4101, 4102, 4110, 96]);
+export const TRAP_IDS = new Set([4100, 4101, 4102, 4103, 4110, 4111, 4120, 4121]);
+
+export const PA1_TERRAIN_SOLID = new Set([
+    4000, 4001, 4002, 4003, 4004, 4005, 4006,
+    4020, 4021, 4022, 4023, 4024, 4025, 4026,
+    4040, 4041, 4042, 4043, 4044, 4045, 4046,
+    4007, 4008, 4009, 4010, 4011, 4012, 4013,
+    4027, 4028, 4029, 4030, 4031, 4032, 4033,
+    4047, 4048, 4049, 4050, 4051, 4052, 4053
+]);
 
 export function getTileAt(map, col, row) {
     if (row >= 0 && row < map.length && col >= 0 && col < map[0].length) {

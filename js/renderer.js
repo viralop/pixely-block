@@ -4,6 +4,10 @@ export const BG_TILE_SIZE = 24;
 export const SCALE = 3;
 export const RENDER_TILE = TILE_SIZE * SCALE;
 export const RENDER_CHAR = CHAR_SIZE * SCALE;
+export const PA1_TERRAIN_SRC = 16;
+export const PA1_TERRAIN_COLS = 22;
+export const PA1_TERRAIN_GID = 4000;
+export const PA1_TERRAIN_RENDER = PA1_TERRAIN_SRC * SCALE;
 
 const TILE_COLS = 20;
 const CHAR_COLS = 9;
@@ -12,6 +16,7 @@ const EXPANSION_TILESETS = [
     { gid0: 1000, cols: 16, count: 112, path: 'kenney_pixel-platformer-farm-expansion/Tilemap/tilemap.png' },
     { gid0: 2000, cols: 16, count: 112, path: 'kenney_pixel-platformer-food-expansion/Tilemap/tilemap.png' },
     { gid0: 3000, cols: 16, count: 112, path: 'kenney_pixel-platformer-industrial-expansion/Tilemap/tilemap.png' },
+    { gid0: PA1_TERRAIN_GID, cols: PA1_TERRAIN_COLS, count: PA1_TERRAIN_COLS * 11, path: 'Pixel Adventure 1/Free/Terrain/Terrain (16x16).png', srcSize: PA1_TERRAIN_SRC }
 ];
 
 let expansionSheets = {};
@@ -30,6 +35,8 @@ export function isLoaded() {
     return sheets.tiles && sheets.characters && sheets.backgrounds;
 }
 
+let pa1LoadPromise = null;
+
 export function loadAll() {
     const expPromises = EXPANSION_TILESETS.map(ts =>
         loadImage(ts.path).then(img => { expansionSheets[ts.gid0] = img; }).catch(e => { console.warn('Failed to load expansion tiles:', ts.path); })
@@ -41,6 +48,16 @@ export function loadAll() {
         loadExtraSprites(),
         ...expPromises
     ]);
+}
+
+export function loadPA1Assets() {
+    if (pa1LoadPromise) return pa1LoadPromise;
+    pa1LoadPromise = import('./pa1-assets.js').then(mod => mod.loadAll()).then(() => {
+        console.log('PA1 assets loaded');
+    }).catch(e => {
+        console.warn('PA1 asset loading failed:', e);
+    });
+    return pa1LoadPromise;
 }
 
 function loadExtraSprites() {
@@ -109,12 +126,13 @@ function loadImage(src) {
 
 export function drawTile(ctx, tileId, screenX, screenY) {
     if (tileId <= 0) return;
-    let sheet = sheets.tiles, cols = TILE_COLS, gid0 = 28;
+    let sheet = sheets.tiles, cols = TILE_COLS, gid0 = 28, srcSize = TILE_SIZE;
     for (const ts of EXPANSION_TILESETS) {
         if (tileId >= ts.gid0 && tileId < ts.gid0 + ts.count) {
             sheet = expansionSheets[ts.gid0];
             cols = ts.cols;
             gid0 = ts.gid0;
+            srcSize = ts.srcSize || TILE_SIZE;
             break;
         }
     }
@@ -122,13 +140,15 @@ export function drawTile(ctx, tileId, screenX, screenY) {
     const index = tileId - gid0;
     const col = index % cols;
     const row = Math.floor(index / cols);
-    const sx = col * (TILE_SIZE + 1);
-    const sy = row * (TILE_SIZE + 1);
+    const spacing = srcSize === TILE_SIZE ? 1 : 0;
+    const sx = col * (srcSize + spacing);
+    const sy = row * (srcSize + spacing);
+    const destSize = srcSize * SCALE;
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(
         sheet,
-        sx, sy, TILE_SIZE, TILE_SIZE,
-        Math.round(screenX), Math.round(screenY), RENDER_TILE + 1, RENDER_TILE + 1
+        sx, sy, srcSize, srcSize,
+        Math.round(screenX), Math.round(screenY), destSize + 1, destSize + 1
     );
 }
 

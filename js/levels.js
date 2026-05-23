@@ -26,7 +26,9 @@ function _buildLevel(data) {
     if (exit && map[exit.ty] && map[exit.ty][exit.tx] !== 178) map[exit.ty][exit.tx] = 178;
     return {
         name: data.name, width: w, height: h, theme: data.theme || 'grass',
-        bgColor: data.bgColor || '#1a2a1a', spawn, exit, map,
+        bgColor: data.bgColor || '#1a2a1a',
+        bgImage: data.bgImage || null,
+        spawn, exit, map,
         solidMap: data.solidMap ? data.solidMap.map(r => r.slice()) : null,
         entities: (data.entities || []).map(e => ({...e})),
         platforms: (data.platforms || []).map(p => ({...p, tiles: (p.tiles || []).map(t => ({...t}))})),

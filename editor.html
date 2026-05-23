@@ -209,6 +209,22 @@
       <button class="btn" id="btn-resize">Apply</button>
     </div>
 
+    <h3>Background</h3>
+    <div class="btn-row" style="flex-wrap:wrap;">
+      <label style="font-size:10px;display:flex;align-items:center;gap:4px;">BG Image:
+        <select id="inp-bg-image" style="width:90px;background:#1a1a2e;border:1px solid #2a2a4a;color:#fff;padding:2px;border-radius:2px;font-size:11px;">
+          <option value="">(parallax)</option>
+          <option value="blue">Blue</option>
+          <option value="brown">Brown</option>
+          <option value="gray">Gray</option>
+          <option value="green">Green</option>
+          <option value="pink">Pink</option>
+          <option value="purple">Purple</option>
+          <option value="yellow">Yellow</option>
+        </select>
+      </label>
+    </div>
+
     <h3>Actions</h3>
     <div class="btn-row">
       <button class="btn" id="btn-undo">Undo</button>
@@ -310,6 +326,7 @@ const TILESETS = [
   { name: 'Farm', url: FARM_URL, gid0: 1000, cols: 16, rows: 7, count: 112 },
   { name: 'Food', url: FOOD_URL, gid0: 2000, cols: 16, rows: 7, count: 112 },
   { name: 'Industrial', url: IND_URL, gid0: 3000, cols: 16, rows: 7, count: 112 },
+  { name: 'PA1 Terrain', url: 'Pixel Adventure 1/Free/Terrain/Terrain (16x16).png', gid0: 4000, cols: 22, rows: 11, count: 242, srcSize: 16, noSpacing: true },
 ];
 
 const cv = document.getElementById('editor-canvas');
@@ -335,7 +352,11 @@ let platforms = [];
 let selPlatform = -1;
 let platformDragStart = null;
 
-const SOLID_TILES = new Set([33,52,53,169,170,171,109,110,111,49,50,51,60,80,100,76,78,181,182,183]);
+const SOLID_TILES = new Set([33,52,53,169,170,171,109,110,111,49,50,51,60,80,100,76,78,181,182,183,
+  4000,4001,4002,4003,4004,4005,4006,4007,4008,4009,4010,4011,4012,4013,
+  4020,4021,4022,4023,4024,4025,4026,4027,4028,4029,4030,4031,4032,4033,
+  4040,4041,4042,4043,4044,4045,4046,4047,4048,4049,4050,4051,4052,4053
+]);
 const DEFAULT_BUILD = 49;
 const DEFAULT_PAINT = 28;
 
@@ -486,7 +507,9 @@ function getTileSet(id) {
 function getTileSrcRect(id) {
   const ts = getTileSet(id);
   const i = id - ts.gid0;
-  return { sx: (i % ts.cols) * (TS + TSPACE), sy: Math.floor(i / ts.cols) * (TS + TSPACE), img: tilesetImgs[ts.name] || tileImg };
+  const srcSz = ts.srcSize || TS;
+  const spacing = ts.noSpacing ? 0 : TSPACE;
+  return { sx: (i % ts.cols) * (srcSz + spacing), sy: Math.floor(i / ts.cols) * (srcSz + spacing), img: tilesetImgs[ts.name] || tileImg, srcSize: srcSz };
 }
 
 // === PALETTE ===
@@ -508,7 +531,7 @@ function buildPalette() {
       const x = c.getContext('2d');
       x.imageSmoothingEnabled = false;
       const r = getTileSrcRect(id);
-      x.drawImage(r.img, r.sx, r.sy, TS, TS, 0, 0, 32, 32);
+      x.drawImage(r.img, r.sx, r.sy, r.srcSize || TS, r.srcSize || TS, 0, 0, 32, 32);
       c.addEventListener('mousedown', onPalDown);
       c.addEventListener('mouseenter', (e) => showTileInfo(e, id, ts.name));
       c.addEventListener('mousemove', (e) => moveTileInfo(e));
@@ -531,7 +554,7 @@ function updSelPreview() {
   const x = c.getContext('2d');
   x.imageSmoothingEnabled = false; x.clearRect(0, 0, 32, 32);
   const r = getTileSrcRect(selId);
-  x.drawImage(r.img, r.sx, r.sy, TS, TS, 0, 0, 32, 32);
+  x.drawImage(r.img, r.sx, r.sy, r.srcSize || TS, r.srcSize || TS, 0, 0, 32, 32);
   document.getElementById('sel-label').textContent = 'Tile ID: ' + selId;
   const solid = SOLID_TILES.has(selId);
   const sl = document.getElementById('sel-solid');
@@ -549,11 +572,13 @@ function onPalDown(e) {
   ghostCv.width = RT; ghostCv.height = RT;
   const ts = getTileSet(id);
   const idx = id - ts.gid0;
-  const sx = (idx % ts.cols) * (TS + TSPACE);
-  const sy = Math.floor(idx / ts.cols) * (TS + TSPACE);
+  const srcSz = ts.srcSize || TS;
+  const spc = ts.noSpacing ? 0 : TSPACE;
+  const sx = (idx % ts.cols) * (srcSz + spc);
+  const sy = Math.floor(idx / ts.cols) * (srcSz + spc);
   const img = tilesetImgs[ts.name];
   ghostCx.imageSmoothingEnabled = false;
-  ghostCx.drawImage(img || tileImg, sx, sy, TS, TS, 0, 0, RT, RT);
+  ghostCx.drawImage(img || tileImg, sx, sy, srcSz, srcSz, 0, 0, RT, RT);
   ghostCv.style.display = 'block';
   moveGhost(e.clientX, e.clientY);
 }
@@ -568,7 +593,7 @@ function showTileInfo(e, id, setName) {
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, 64, 64);
   const r = getTileSrcRect(id);
-  ctx.drawImage(r.img, r.sx, r.sy, TS, TS, 0, 0, 64, 64);
+  ctx.drawImage(r.img, r.sx, r.sy, r.srcSize || TS, r.srcSize || TS, 0, 0, 64, 64);
   popup.querySelector('.tip-label').textContent = setName + ' Tile';
   popup.querySelector('.tip-id').textContent = 'ID: ' + id;
   popup.style.display = 'block';
@@ -807,7 +832,7 @@ function render() {
   const sr = Math.max(0, Math.floor(cy0 / RT)), er = Math.min(levelH - 1, Math.ceil((cy0 + cv.height) / RT));
   for (let r = sr; r <= er; r++) for (let c = sc; c <= ec; c++) {
     const x = c * RT, y = r * RT, id = (map[r] && map[r][c]) || 0;
-    if (id > 0) { const rc = getTileSrcRect(id); cx.drawImage(rc.img, rc.sx, rc.sy, TS, TS, x, y, RT, RT); }
+    if (id > 0) { const rc = getTileSrcRect(id); const ss = rc.srcSize || TS; cx.drawImage(rc.img, rc.sx, rc.sy, ss, ss, x, y, RT, RT); }
     if (solidMap[r] && solidMap[r][c]) { cx.fillStyle = 'rgba(255,0,0,0.18)'; cx.fillRect(x, y, RT, RT); }
     else if (paintMap[r] && paintMap[r][c]) { cx.fillStyle = 'rgba(0,255,0,0.18)'; cx.fillRect(x, y, RT, RT); }
     cx.strokeStyle = id > 0 ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.12)';
@@ -919,7 +944,7 @@ function render() {
       cx.strokeStyle = def.color; cx.lineWidth = 2; cx.strokeRect(mgx * RT, mgy * RT, RT, RT);
       cx.globalAlpha = 1;
     } else {
-      cx.globalAlpha = 0.4; const rc = getTileSrcRect(selId); cx.drawImage(tileImg, rc.sx, rc.sy, TS, TS, mgx * RT, mgy * RT, RT, RT); cx.globalAlpha = 1;
+      cx.globalAlpha = 0.4; const rc = getTileSrcRect(selId); const ss = rc.srcSize || TS; cx.drawImage(rc.img || tileImg, rc.sx, rc.sy, ss, ss, mgx * RT, mgy * RT, RT, RT); cx.globalAlpha = 1;
       cx.strokeStyle = '#fff'; cx.lineWidth = 2; cx.strokeRect(mgx * RT, mgy * RT, RT, RT);
     }
   }
@@ -958,6 +983,7 @@ function _levelToJS(l) {
   lines.push('  w: ' + l.w + ',');
   lines.push('  h: ' + l.h + ',');
   lines.push('  bgColor: ' + JSON.stringify(l.bgColor || '#1a2a1a') + ',');
+  if (l.bgImage) lines.push('  bgImage: ' + JSON.stringify(l.bgImage) + ',');
   lines.push('  theme: ' + JSON.stringify(l.theme || 'grass') + ',');
   lines.push('  spawn: ' + JSON.stringify(l.spawn || { tx: 1, ty: (l.h || 10) - 2 }) + ',');
   lines.push('  exit: ' + JSON.stringify(l.exit || { tx: (l.w || 45) - 2, ty: (l.h || 10) - 2 }) + ',');
@@ -988,9 +1014,11 @@ async function _ensureLevelsDir() {
 }
 
 function saveCurrentLevel() {
+  const bgImageEl = document.getElementById('inp-bg-image');
   const entry = {
     name: editingName, w: levelW, h: levelH,
     bgColor: document.getElementById('inp-bg') ? document.getElementById('inp-bg').value : '#1a2a1a',
+    bgImage: bgImageEl ? bgImageEl.value : null,
     theme: 'grass',
     spawn: actionPoints.start || { tx: 1, ty: levelH - 2 },
     exit: actionPoints.end || { tx: levelW - 2, ty: levelH - 2 },
