@@ -1,5 +1,4 @@
 // Level 1: Green Meadows
-// Place in js/levels/ folder to override the default
 
 export default {
   name: "Green Meadows",
@@ -11,10 +10,10 @@ export default {
   exit: {"tx":43,"ty":7},
   map: [
     [170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,170,132,132,132,132,132,132,132],
-    [0,0,45,46,47,0,0,181,182,183,0,0,0,0,0,0,0,169,150,150,171,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,169,132,132,132,132,132,132],
+    [0,0,45,46,47,0,0,0,0,0,0,0,0,0,0,0,0,169,150,150,171,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,169,132,132,132,132,132,132],
     [0,105,66,66,66,107,0,0,0,0,0,0,0,0,0,0,0,0,169,171,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,169,132,132,132,132,132],
     [0,0,85,125,87,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,179,180,0,0,169,132,132,132,132],
-    [0,0,0,124,0,0,0,0,0,0,0,0,179,180,0,0,0,0,0,0,0,0,139,0,0,0,0,0,0,0,0,0,0,0,0,181,182,183,0,0,0,169,132,132,132],
+    [0,0,0,124,0,0,0,0,0,0,0,0,179,180,0,0,0,0,0,0,0,0,139,0,0,0,0,0,0,0,0,0,0,0,0,0,182,183,0,0,0,169,132,132,132],
     [0,0,0,166,167,179,179,180,0,0,79,181,182,183,0,0,0,0,179,180,179,76,78,0,0,0,0,0,179,180,179,0,0,0,0,0,0,0,0,0,0,0,169,170,150],
     [0,146,147,164,0,181,182,183,0,0,99,0,0,0,0,0,0,181,182,183,0,0,0,0,0,0,0,181,182,183,0,0,0,0,0,0,0,0,0,0,0,0,0,138,149],
     [0,0,0,165,0,0,0,0,154,0,99,0,0,0,0,0,154,0,0,0,0,0,0,0,0,0,156,0,0,0,135,0,0,0,0,0,0,0,0,0,0,0,0,178,149],
@@ -23,10 +22,10 @@ export default {
   ],
   solidMap: [
     [true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,false,false,false,false,false,false],
-    [false,false,false,false,false,false,false,true,true,true,false,false,false,false,false,false,false,true,true,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,false,false,false],
+    [false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,true,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,false,false,false],
     [false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,false,false],
     [false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,false],
-    [false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,true,true,false,false,false,true,false,false,false],
+    [false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,true,false,false,false,true,false,false,false],
     [false,false,false,false,false,false,false,false,false,false,false,true,true,true,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,true,false],
     [false,false,false,false,false,true,true,true,false,false,false,false,false,false,false,false,false,true,true,true,false,false,false,false,false,false,false,true,true,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false],
     [false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false],
@@ -49,4 +48,5 @@ export default {
       "patrolR": 29
     }
   ],
+  platforms: [{"tx":35,"ty":4,"moveX":0,"moveY":2,"tiles":[{"tx":35,"ty":4,"id":181}]}],
 };

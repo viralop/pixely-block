@@ -1,70 +1,114 @@
 <!DOCTYPE html>
 <html>
-<head><title>Tile Viewer - Kenney Pixel Platformer</title>
+<head>
+<meta charset="UTF-8">
+<title>Expansion Tile Viewer</title>
 <style>
-body{background:#222;color:#fff;font-family:monospace;padding:20px}
-h2{color:#ffd700}
-.grid{display:flex;flex-wrap:wrap;gap:2px;margin:10px 0}
-.tile{position:relative;border:1px solid #444;cursor:pointer}
-.tile:hover{border-color:#ffd700}
-.tile-label{position:absolute;top:2px;left:2px;font-size:9px;color:#0f0;text-shadow:1px 1px #fff}
-.section{margin:30px 0;padding:15px;border:1px solid #444;border-radius:4px}
+  body { background: #1a1a2e; color: #eee; font-family: monospace; margin: 20px; }
+  h1 { color: #e94560; margin-bottom: 5px; }
+  h2 { color: #5ee8d0; margin-top: 30px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+  .grid { display: grid; grid-template-columns: repeat(16, 80px); gap: 4px; margin: 10px 0 30px; }
+  .tile {
+    background: #0f0f23; border: 1px solid #333; border-radius: 4px;
+    display: flex; flex-direction: column; align-items: center; padding: 4px;
+    position: relative; cursor: pointer;
+  }
+  .tile:hover { border-color: #5ee8d0; background: #1a1a3e; }
+  .tile canvas { image-rendering: pixelated; width: 54px; height: 54px; }
+  .tile .id { font-size: 10px; color: #888; margin-top: 2px; }
+  .tile .pos { font-size: 9px; color: #555; }
+  #preview-box {
+    display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: #0f0f23; border: 2px solid #5ee8d0; border-radius: 8px; padding: 20px;
+    z-index: 100; text-align: center;
+  }
+  #preview-box canvas { image-rendering: pixelated; width: 180px; height: 180px; }
+  #preview-box .info { color: #5ee8d0; margin-top: 10px; font-size: 14px; }
+  #overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99; }
 </style>
 </head>
 <body>
-<h1>Kenney Pixel Platformer - Tile Reference</h1>
-<p>Hover over tiles to see their IDs. Click to copy the tile ID.</p>
-<div id="output"></div>
-<div id="viewer" style="position:fixed;top:10px;right:10px;background:rgba(0,0,0,0.9);padding:15px;border:2px solid #ffd700;border-radius:8px;display:none;font-size:14px;max-width:300px" id="info"></div>
+<h1>Expansion Tileset Viewer</h1>
+<div id="content"></div>
+<div id="overlay" onclick="closePreview()"></div>
+<div id="preview-box">
+  <canvas id="prev-canvas" width="180" height="180"></canvas>
+  <div class="info" id="prev-info"></div>
+</div>
 <script>
-const info = document.getElementById('viewer');
+const TS = 18, TSPACE = 1, SCALE = 10;
+const TILESETS = [
+  { name: 'Farm', url: 'kenney_pixel-platformer-farm-expansion/Tilemap/tilemap.png', gid0: 1000, cols: 16, rows: 7, count: 112 },
+  { name: 'Food', url: 'kenney_pixel-platformer-food-expansion/Tilemap/tilemap.png', gid0: 2000, cols: 16, rows: 7, count: 112 },
+  { name: 'Industrial', url: 'kenney_pixel-platformer-industrial-expansion/Tilemap/tilemap.png', gid0: 3000, cols: 16, rows: 7, count: 112 }
+];
 
-function createSection(title, imgSrc, tileW, tileH, cols, rows, spacing, firstgid) {
-    const div = document.createElement('div');
-    div.className = 'section';
-    div.innerHTML = `<h2>${title}</h2><p>${imgSrc} | ${cols}x${rows} tiles | ${tileW}x${tileH}px | spacing: ${spacing}px | firstgid: ${firstgid}</p>`;
+const container = document.getElementById('content');
+
+Promise.all(TILESETS.map(ts => new Promise((resolve, reject) => {
+  const img = new Image();
+  img.onload = () => resolve({ ...ts, img });
+  img.onerror = reject;
+  img.src = ts.url;
+}))).then(sets => {
+  sets.forEach(ts => {
+    const h2 = document.createElement('h2');
+    h2.textContent = ts.name + ' (' + ts.gid0 + ' - ' + (ts.gid0 + ts.count - 1) + ')';
+    container.appendChild(h2);
+
     const grid = document.createElement('div');
     grid.className = 'grid';
-    const img = new Image();
-    img.src = imgSrc;
-    img.onload = () => {
-        for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
-                const idx = r * cols + c;
-                const globalId = idx + firstgid;
-                const canvas = document.createElement('canvas');
-                canvas.width = tileW * 3;
-                canvas.height = tileH * 3;
-                canvas.className = 'tile';
-                canvas.title = `Index: ${idx} | Global ID: ${globalId} | Col: ${c} Row: ${r}`;
-                const ctx = canvas.getContext('2d');
-                ctx.imageSmoothingEnabled = false;
-                const sx = c * (tileW + spacing);
-                const sy = r * (tileH + spacing);
-                ctx.drawImage(img, sx, sy, tileW, tileH, 0, 0, tileW * 3, tileH * 3);
-                const label = document.createElement('span');
-                label.className = 'tile-label';
-                label.textContent = globalId;
-                canvas.appendChild(label);
-                canvas.onclick = () => {
-                    navigator.clipboard.writeText(String(globalId));
-                    info.style.display = 'block';
-                    info.innerHTML = `<b>Tile ID: ${globalId}</b><br>Index: ${idx}<br>Col: ${c}, Row: ${r}<br><small>Copied to clipboard!</small>`;
-                    setTimeout(() => info.style.display = 'none', 3000);
-                };
-                grid.appendChild(canvas);
-            }
-        }
-    };
-    div.appendChild(grid);
-    document.getElementById('output').appendChild(div);
+
+    for (let i = 0; i < ts.count; i++) {
+      const id = ts.gid0 + i;
+      const col = i % ts.cols;
+      const row = Math.floor(i / ts.cols);
+      const sx = col * (TS + TSPACE);
+      const sy = row * (TS + TSPACE);
+
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+
+      const c = document.createElement('canvas');
+      c.width = TS; c.height = TS;
+      const cx = c.getContext('2d');
+      cx.imageSmoothingEnabled = false;
+      cx.drawImage(ts.img, sx, sy, TS, TS, 0, 0, TS, TS);
+      tile.appendChild(c);
+
+      const idLabel = document.createElement('div');
+      idLabel.className = 'id';
+      idLabel.textContent = id;
+      tile.appendChild(idLabel);
+
+      const posLabel = document.createElement('div');
+      posLabel.className = 'pos';
+      posLabel.textContent = 'r' + row + ' c' + col;
+      tile.appendChild(posLabel);
+
+      tile.onclick = () => showPreview(ts.img, sx, sy, id, row, col, ts.name);
+      grid.appendChild(tile);
+    }
+
+    container.appendChild(grid);
+  });
+});
+
+function showPreview(img, sx, sy, id, row, col, name) {
+  const c = document.getElementById('prev-canvas');
+  const cx = c.getContext('2d');
+  cx.imageSmoothingEnabled = false;
+  cx.clearRect(0, 0, 180, 180);
+  cx.drawImage(img, sx, sy, TS, TS, 0, 0, 180, 180);
+  document.getElementById('prev-info').textContent = name + ' | ID: ' + id + ' | Row: ' + row + ' Col: ' + col;
+  document.getElementById('preview-box').style.display = 'block';
+  document.getElementById('overlay').style.display = 'block';
 }
 
-createSection('Tiles (tilemap.png - non-packed)', 'kenney_pixel-platformer/Tilemap/tilemap.png', 18, 18, 20, 9, 1, 28);
-createSection('Tiles (tilemap_packed.png - packed)', 'kenney_pixel-platformer/Tilemap/tilemap_packed.png', 18, 18, 20, 9, 0, 28);
-createSection('Characters (tilemap-characters.png)', 'kenney_pixel-platformer/Tilemap/tilemap-characters.png', 24, 24, 9, 3, 1, 1);
-createSection('Characters (tilemap-characters_packed.png)', 'kenney_pixel-platformer/Tilemap/tilemap-characters_packed.png', 24, 24, 9, 3, 0, 1);
-createSection('Backgrounds (tilemap-backgrounds.png)', 'kenney_pixel-platformer/Tilemap/tilemap-backgrounds.png', 24, 24, 8, 3, 1, 0);
+function closePreview() {
+  document.getElementById('preview-box').style.display = 'none';
+  document.getElementById('overlay').style.display = 'none';
+}
 </script>
 </body>
 </html>
