@@ -539,6 +539,58 @@ function buildPalette() {
       pal.appendChild(c);
     }
   }
+
+  const PA1_SPECIALS = [
+    { label: 'Fruits', items: [
+      { id: 5001, name: 'Apple' }, { id: 5002, name: 'Bananas' }, { id: 5003, name: 'Cherries' },
+      { id: 5004, name: 'Kiwi' }, { id: 5005, name: 'Melon' }, { id: 5006, name: 'Orange' },
+      { id: 5007, name: 'Pineapple' }, { id: 5008, name: 'Strawberry' }
+    ], color: '#ff6b9d' },
+    { label: 'Item Boxes', items: [
+      { id: 5020, name: 'Box1' }, { id: 5021, name: 'Box1 Hit' }, { id: 5022, name: 'Box1 Break' },
+      { id: 5030, name: 'Box2' }, { id: 5031, name: 'Box2 Hit' }, { id: 5032, name: 'Box2 Break' },
+      { id: 5040, name: 'Box3' }, { id: 5041, name: 'Box3 Hit' }, { id: 5042, name: 'Box3 Break' }
+    ], color: '#c8a832' },
+    { label: 'PA1 Checkpoints', items: [
+      { id: 5050, name: 'Checkpoint' }
+    ], color: '#4fc3f7' },
+    { label: 'Traps', items: [
+      { id: 4100, name: 'Fire 1' }, { id: 4101, name: 'Fire 2' }, { id: 4102, name: 'Fire 3' }, { id: 4103, name: 'Fire Off' },
+      { id: 4110, name: 'Saw On' }, { id: 4111, name: 'Saw Off' },
+      { id: 4120, name: 'Trampoline' }, { id: 4121, name: 'Trampoline Active' }
+    ], color: '#e94560' }
+  ];
+
+  for (const group of PA1_SPECIALS) {
+    const hdr = document.createElement('div');
+    hdr.style.cssText = 'width:100%;padding:4px 6px;font-size:11px;font-weight:bold;color:' + group.color + ';border-bottom:1px solid #2a1a3a;margin-bottom:2px;margin-top:6px;';
+    hdr.textContent = group.label;
+    pal.appendChild(hdr);
+    for (const item of group.items) {
+      const c = document.createElement('canvas');
+      c.width = 32; c.height = 32; c.className = 'pal-tile' + (item.id === selId ? ' sel' : '');
+      c.dataset.id = item.id;
+      const x = c.getContext('2d');
+      x.fillStyle = group.color + '33';
+      x.fillRect(0, 0, 32, 32);
+      x.strokeStyle = group.color;
+      x.lineWidth = 1;
+      x.strokeRect(0.5, 0.5, 31, 31);
+      x.fillStyle = group.color;
+      x.font = '7px monospace';
+      x.textAlign = 'center';
+      x.textBaseline = 'middle';
+      x.fillText(item.name.substring(0, 4), 16, 14);
+      x.font = '6px monospace';
+      x.fillText(item.id, 16, 24);
+      c.addEventListener('mousedown', onPalDown);
+      c.addEventListener('mouseenter', (e) => showTileInfo(e, item.id, group.label));
+      c.addEventListener('mousemove', (e) => moveTileInfo(e));
+      c.addEventListener('mouseleave', hideTileInfo);
+      pal.appendChild(c);
+    }
+  }
+
   updSelPreview();
 }
 
@@ -553,8 +605,16 @@ function updSelPreview() {
   const c = document.getElementById('sel-preview');
   const x = c.getContext('2d');
   x.imageSmoothingEnabled = false; x.clearRect(0, 0, 32, 32);
-  const r = getTileSrcRect(selId);
-  x.drawImage(r.img, r.sx, r.sy, r.srcSize || TS, r.srcSize || TS, 0, 0, 32, 32);
+  const PA1_SPECIAL_IDS = new Set([5001,5002,5003,5004,5005,5006,5007,5008,5020,5021,5022,5030,5031,5032,5040,5041,5042,5050,4100,4101,4102,4103,4110,4111,4120,4121]);
+  if (PA1_SPECIAL_IDS.has(selId)) {
+    x.fillStyle = '#ff6b9d33'; x.fillRect(0, 0, 32, 32);
+    x.strokeStyle = '#ff6b9d'; x.lineWidth = 1; x.strokeRect(0.5, 0.5, 31, 31);
+    x.fillStyle = '#fff'; x.font = '8px monospace'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText(selId, 16, 16);
+  } else {
+    const r = getTileSrcRect(selId);
+    x.drawImage(r.img, r.sx, r.sy, r.srcSize || TS, r.srcSize || TS, 0, 0, 32, 32);
+  }
   document.getElementById('sel-label').textContent = 'Tile ID: ' + selId;
   const solid = SOLID_TILES.has(selId);
   const sl = document.getElementById('sel-solid');
@@ -570,15 +630,24 @@ function onPalDown(e) {
   selectTile(id);
   dragging = true;
   ghostCv.width = RT; ghostCv.height = RT;
-  const ts = getTileSet(id);
-  const idx = id - ts.gid0;
-  const srcSz = ts.srcSize || TS;
-  const spc = ts.noSpacing ? 0 : TSPACE;
-  const sx = (idx % ts.cols) * (srcSz + spc);
-  const sy = Math.floor(idx / ts.cols) * (srcSz + spc);
-  const img = tilesetImgs[ts.name];
-  ghostCx.imageSmoothingEnabled = false;
-  ghostCx.drawImage(img || tileImg, sx, sy, srcSz, srcSz, 0, 0, RT, RT);
+  const PA1_SPECIAL_IDS = new Set([5001,5002,5003,5004,5005,5006,5007,5008,5020,5021,5022,5030,5031,5032,5040,5041,5042,5050,4100,4101,4102,4103,4110,4111,4120,4121]);
+  if (PA1_SPECIAL_IDS.has(id)) {
+    ghostCx.imageSmoothingEnabled = false;
+    ghostCx.fillStyle = '#ff6b9d55'; ghostCx.fillRect(0, 0, RT, RT);
+    ghostCx.strokeStyle = '#ff6b9d'; ghostCx.lineWidth = 2; ghostCx.strokeRect(1, 1, RT-2, RT-2);
+    ghostCx.fillStyle = '#fff'; ghostCx.font = '14px monospace'; ghostCx.textAlign = 'center'; ghostCx.textBaseline = 'middle';
+    ghostCx.fillText(id, RT/2, RT/2);
+  } else {
+    const ts = getTileSet(id);
+    const idx = id - ts.gid0;
+    const srcSz = ts.srcSize || TS;
+    const spc = ts.noSpacing ? 0 : TSPACE;
+    const sx = (idx % ts.cols) * (srcSz + spc);
+    const sy = Math.floor(idx / ts.cols) * (srcSz + spc);
+    const img = tilesetImgs[ts.name];
+    ghostCx.imageSmoothingEnabled = false;
+    ghostCx.drawImage(img || tileImg, sx, sy, srcSz, srcSz, 0, 0, RT, RT);
+  }
   ghostCv.style.display = 'block';
   moveGhost(e.clientX, e.clientY);
 }
@@ -832,7 +901,18 @@ function render() {
   const sr = Math.max(0, Math.floor(cy0 / RT)), er = Math.min(levelH - 1, Math.ceil((cy0 + cv.height) / RT));
   for (let r = sr; r <= er; r++) for (let c = sc; c <= ec; c++) {
     const x = c * RT, y = r * RT, id = (map[r] && map[r][c]) || 0;
-    if (id > 0) { const rc = getTileSrcRect(id); const ss = rc.srcSize || TS; cx.drawImage(rc.img, rc.sx, rc.sy, ss, ss, x, y, RT, RT); }
+    if (id > 0) {
+      const PA1_SPECIAL_IDS2 = new Set([5001,5002,5003,5004,5005,5006,5007,5008,5020,5021,5022,5030,5031,5032,5040,5041,5042,5050,4100,4101,4102,4103,4110,4111,4120,4121]);
+      if (PA1_SPECIAL_IDS2.has(id)) {
+        let col = '#ff6b9d'; if (id >= 5020 && id <= 5049) col = '#c8a832'; else if (id === 5050) col = '#4fc3f7'; else if (id >= 4100 && id <= 4121) col = '#e94560';
+        cx.fillStyle = col + '33'; cx.fillRect(x, y, RT, RT);
+        cx.strokeStyle = col + '88'; cx.lineWidth = 1; cx.strokeRect(x + 0.5, y + 0.5, RT - 1, RT - 1);
+        cx.fillStyle = col; cx.font = '10px monospace'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
+        cx.fillText(id, x + RT/2, y + RT/2);
+      } else {
+        const rc = getTileSrcRect(id); const ss = rc.srcSize || TS; cx.drawImage(rc.img, rc.sx, rc.sy, ss, ss, x, y, RT, RT);
+      }
+    }
     if (solidMap[r] && solidMap[r][c]) { cx.fillStyle = 'rgba(255,0,0,0.18)'; cx.fillRect(x, y, RT, RT); }
     else if (paintMap[r] && paintMap[r][c]) { cx.fillStyle = 'rgba(0,255,0,0.18)'; cx.fillRect(x, y, RT, RT); }
     cx.strokeStyle = id > 0 ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.12)';
@@ -944,7 +1024,17 @@ function render() {
       cx.strokeStyle = def.color; cx.lineWidth = 2; cx.strokeRect(mgx * RT, mgy * RT, RT, RT);
       cx.globalAlpha = 1;
     } else {
-      cx.globalAlpha = 0.4; const rc = getTileSrcRect(selId); const ss = rc.srcSize || TS; cx.drawImage(rc.img || tileImg, rc.sx, rc.sy, ss, ss, mgx * RT, mgy * RT, RT, RT); cx.globalAlpha = 1;
+      cx.globalAlpha = 0.4;
+      const PA1_SPECIAL_IDS = new Set([5001,5002,5003,5004,5005,5006,5007,5008,5020,5021,5022,5030,5031,5032,5040,5041,5042,5050,4100,4101,4102,4103,4110,4111,4120,4121]);
+      if (PA1_SPECIAL_IDS.has(selId)) {
+        cx.fillStyle = '#ff6b9d44'; cx.fillRect(mgx * RT, mgy * RT, RT, RT);
+        cx.strokeStyle = '#ff6b9d'; cx.lineWidth = 2; cx.strokeRect(mgx * RT, mgy * RT, RT, RT);
+        cx.fillStyle = '#fff'; cx.font = '12px monospace'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
+        cx.fillText(selId, mgx * RT + RT/2, mgy * RT + RT/2);
+      } else {
+        const rc = getTileSrcRect(selId); const ss = rc.srcSize || TS; cx.drawImage(rc.img || tileImg, rc.sx, rc.sy, ss, ss, mgx * RT, mgy * RT, RT, RT);
+      }
+      cx.globalAlpha = 1;
       cx.strokeStyle = '#fff'; cx.lineWidth = 2; cx.strokeRect(mgx * RT, mgy * RT, RT, RT);
     }
   }
@@ -1171,6 +1261,7 @@ async function init() {
       loadImg(FARM_URL).then(i => { tilesetImgs['Farm'] = i; console.log('Loaded Farm tiles'); }).catch(e => console.warn('Failed Farm:', e)),
       loadImg(FOOD_URL).then(i => { tilesetImgs['Food'] = i; console.log('Loaded Food tiles'); }).catch(e => console.warn('Failed Food:', e)),
       loadImg(IND_URL).then(i => { tilesetImgs['Industrial'] = i; console.log('Loaded Industrial tiles'); }).catch(e => console.warn('Failed Industrial:', e)),
+      loadImg('Pixel Adventure 1/Free/Terrain/Terrain (16x16).png').then(i => { tilesetImgs['PA1 Terrain'] = i; console.log('Loaded PA1 Terrain'); }).catch(e => console.warn('Failed PA1 Terrain:', e)),
     ]);
   }
   catch(e) { document.getElementById('loading').textContent = 'Failed to load assets. Run: node server.js'; return; }

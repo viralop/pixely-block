@@ -56,6 +56,7 @@ export class Player {
         this.animFrame = 0;
         this.animTimer = 0;
         this.idleAnimFrame = 0;
+        this.idleAnimTimer = 0;
         this.runFrames = [CHAR_IDS.run1, CHAR_IDS.run2, CHAR_IDS.run3];
         this.didJump = false;
         this.didAttack = false;
@@ -115,7 +116,8 @@ export class Player {
             if (this.animTimer >= 6) { this.animTimer = 0; this.animFrame = (this.animFrame + 1) % this.runFrames.length; }
         } else { this.animTimer = 0; this.animFrame = 0; }
         if (Math.abs(this.vx) < 0.5 && this.onGround) {
-            this.idleAnimFrame = (this.idleAnimFrame + 1) % 110;
+            this.idleAnimTimer++;
+            if (this.idleAnimTimer >= 8) { this.idleAnimTimer = 0; this.idleAnimFrame = (this.idleAnimFrame + 1) % 11; }
         }
         this._checkGrabLadder(input, solidMap, tileW, tileH);
         this._checkGrabRope(input, solidMap, tileW, tileH);
