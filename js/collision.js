@@ -105,8 +105,8 @@ export const BOX_IDS = new Set([
     5040, 5041, 5042
 ]);
 export const PA1_CHECKPOINT_IDS = new Set([5050]);
-export const TRAP_HAZARD_IDS = new Set([4100, 4101, 4102, 4110, 96]);
-export const TRAP_IDS = new Set([4100, 4101, 4102, 4103, 4110, 4111, 4120, 4121]);
+export const TRAP_HAZARD_IDS = new Set([4100, 4110, 4130, 4140, 4170, 4180, 4190, 4200, 96]);
+export const TRAP_IDS = new Set([4100, 4110, 4120, 4130, 4140, 4150, 4160, 4170, 4180, 4190, 4200, 4210, 4220, 4230]);
 
 export const PA1_TERRAIN_SOLID = new Set([
     4000, 4001, 4002, 4003, 4004, 4005, 4006,

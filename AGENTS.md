@@ -48,7 +48,8 @@ Source rect: `index = id - gid0`, `sx = (index % cols) * (srcSize + spacing)`, `
 - **Fruits**: 5001-5008 (apple, bananas, cherries, kiwi, melon, orange, pineapple, strawberry)
 - **Item Boxes**: 5020-5022 (Box1), 5030-5032 (Box2), 5040-5042 (Box3)
 - **PA1 Checkpoints**: 5050
-- **Traps**: 4100-4102 (fire), 4103 (fire off), 4110-4111 (saw), 4120-4121 (trampoline)
+- **Traps**: 4100 (fire), 4110 (saw), 4120 (trampoline), 4130 (spikes), 4140 (arrow), 4150 (falling platform), 4160 (fan), 4170 (spiked ball), 4180 (rock head), 4190 (spike head), 4200 (blocks), 4210 (platform brown), 4220 (platform grey), 4230 (sand/mud/ice)
+- **Trap Hazards** (deal damage): 4100, 4110, 4130, 4140, 4170, 4180, 4190, 4200
 - **Key**: 55, **Lock**: 56
 - **Exit**: 178
 - **Springs**: 135,136

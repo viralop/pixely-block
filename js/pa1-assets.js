@@ -166,57 +166,65 @@ function loadTraps() {
     p.push(loadImage(spikeBase + 'Idle.png').then(img => { t.spikes = img; }).catch(() => {}));
 
     const fireBase = PA1_BASE + 'Traps/Fire/';
-    ['On (16x32).png', 'Hit (16x32).png', 'Off.png'].forEach((f, i) => {
-        const keys = ['on', 'hit', 'off'];
-        p.push(loadImage(fireBase + f).then(img => { t['fire_' + keys[i]] = img; }).catch(() => {}));
-    });
+    p.push(loadImage(fireBase + 'On (16x32).png').then(img => { t.fire_on = img; }).catch(() => {}));
+    p.push(loadImage(fireBase + 'Off.png').then(img => { t.fire_off = img; }).catch(() => {}));
+    p.push(loadImage(fireBase + 'Hit (16x32).png').then(img => { t.fire_hit = img; }).catch(() => {}));
 
     const sawBase = PA1_BASE + 'Traps/Saw/';
-    ['On (38x38).png', 'Off.png'].forEach((f, i) => {
-        const keys = ['on', 'off'];
-        p.push(loadImage(sawBase + f).then(img => { t['saw_' + keys[i]] = img; }).catch(() => {}));
-    });
+    p.push(loadImage(sawBase + 'On (38x38).png').then(img => { t.saw_on = img; }).catch(() => {}));
+    p.push(loadImage(sawBase + 'Off.png').then(img => { t.saw_off = img; }).catch(() => {}));
     p.push(loadImage(sawBase + 'Chain.png').then(img => { t.chain = img; }).catch(() => {}));
+
+    const arrowBase = PA1_BASE + 'Traps/Arrow/';
+    p.push(loadImage(arrowBase + 'Idle (18x18).png').then(img => { t.arrow_idle = img; }).catch(() => {}));
+    p.push(loadImage(arrowBase + 'Hit (18x18).png').then(img => { t.arrow_hit = img; }).catch(() => {}));
+
+    const fpBase = PA1_BASE + 'Traps/Falling Platforms/';
+    p.push(loadImage(fpBase + 'On (32x10).png').then(img => { t.falling_on = img; }).catch(() => {}));
+    p.push(loadImage(fpBase + 'Off.png').then(img => { t.falling_off = img; }).catch(() => {}));
+
+    const fanBase = PA1_BASE + 'Traps/Fan/';
+    p.push(loadImage(fanBase + 'On (24x8).png').then(img => { t.fan_on = img; }).catch(() => {}));
+    p.push(loadImage(fanBase + 'Off.png').then(img => { t.fan_off = img; }).catch(() => {}));
 
     const sbBase = PA1_BASE + 'Traps/Spiked Ball/';
     p.push(loadImage(sbBase + 'Spiked Ball.png').then(img => { t.spikedBall = img; }).catch(() => {}));
     p.push(loadImage(sbBase + 'Chain.png').then(img => { t.sbChain = img; }).catch(() => {}));
 
-    const fpBase = PA1_BASE + 'Traps/Falling Platforms/';
-    ['On (32x10).png', 'Off.png'].forEach((f, i) => {
-        const keys = ['on', 'off'];
-        p.push(loadImage(fpBase + f).then(img => { t['falling_' + keys[i]] = img; }).catch(() => {}));
-    });
+    const rhBase = PA1_BASE + 'Traps/Rock Head/';
+    p.push(loadImage(rhBase + 'Idle.png').then(img => { t.rockhead_idle = img; }).catch(() => {}));
+    p.push(loadImage(rhBase + 'Blink (42x42).png').then(img => { t.rockhead_blink = img; }).catch(() => {}));
+    p.push(loadImage(rhBase + 'Bottom Hit (42x42).png').then(img => { t.rockhead_bottom = img; }).catch(() => {}));
+    p.push(loadImage(rhBase + 'Left Hit (42x42).png').then(img => { t.rockhead_left = img; }).catch(() => {}));
+    p.push(loadImage(rhBase + 'Right Hit (42x42).png').then(img => { t.rockhead_right = img; }).catch(() => {}));
+    p.push(loadImage(rhBase + 'Top Hit (42x42).png').then(img => { t.rockhead_top = img; }).catch(() => {}));
 
-    const platBase = PA1_BASE + 'Traps/Platforms/';
-    ['Brown On (32x8).png', 'Brown Off.png', 'Grey On (32x8).png', 'Grey Off.png'].forEach((f, i) => {
-        const keys = ['platBrownOn', 'platBrownOff', 'platGreyOn', 'platGreyOff'];
-        p.push(loadImage(platBase + f).then(img => { t[keys[i]] = img; }).catch(() => {}));
-    });
-
-    const arrowBase = PA1_BASE + 'Traps/Arrow/';
-    ['Idle (18x18).png', 'Hit (18x18).png'].forEach((f, i) => {
-        const keys = ['idle', 'hit'];
-        p.push(loadImage(arrowBase + f).then(img => { t['arrow_' + keys[i]] = img; }).catch(() => {}));
-    });
-
-    const fanBase = PA1_BASE + 'Traps/Fan/';
-    ['On (24x8).png', 'Off.png'].forEach((f, i) => {
-        const keys = ['on', 'off'];
-        p.push(loadImage(fanBase + f).then(img => { t['fan_' + keys[i]] = img; }).catch(() => {}));
-    });
-
-    const trampBase = PA1_BASE + 'Traps/Trampoline/';
-    ['Idle.png', 'Jump (28x28).png'].forEach((f, i) => {
-        const keys = ['idle', 'jump'];
-        p.push(loadImage(trampBase + f).then(img => { t['trampoline_' + keys[i]] = img; }).catch(() => {}));
-    });
+    const shBase = PA1_BASE + 'Traps/Spike Head/';
+    p.push(loadImage(shBase + 'Idle.png').then(img => { t.spikehead_idle = img; }).catch(() => {}));
+    p.push(loadImage(shBase + 'Blink (54x52).png').then(img => { t.spikehead_blink = img; }).catch(() => {}));
+    p.push(loadImage(shBase + 'Bottom Hit (54x52).png').then(img => { t.spikehead_bottom = img; }).catch(() => {}));
+    p.push(loadImage(shBase + 'Left Hit (54x52).png').then(img => { t.spikehead_left = img; }).catch(() => {}));
+    p.push(loadImage(shBase + 'Right Hit (54x52).png').then(img => { t.spikehead_right = img; }).catch(() => {}));
+    p.push(loadImage(shBase + 'Top Hit (54x52).png').then(img => { t.spikehead_top = img; }).catch(() => {}));
 
     const blockBase = PA1_BASE + 'Traps/Blocks/';
-    ['Idle.png', 'HitTop (22x22).png', 'HitSide (22x22).png'].forEach((f, i) => {
-        const keys = ['idle', 'hitTop', 'hitSide'];
-        p.push(loadImage(blockBase + f).then(img => { t['block_' + keys[i]] = img; }).catch(() => {}));
-    });
+    p.push(loadImage(blockBase + 'Idle.png').then(img => { t.block_idle = img; }).catch(() => {}));
+    p.push(loadImage(blockBase + 'HitTop (22x22).png').then(img => { t.block_hittop = img; }).catch(() => {}));
+    p.push(loadImage(blockBase + 'HitSide (22x22).png').then(img => { t.block_hitside = img; }).catch(() => {}));
+
+    const platBase = PA1_BASE + 'Traps/Platforms/';
+    p.push(loadImage(platBase + 'Brown On (32x8).png').then(img => { t.platBrownOn = img; }).catch(() => {}));
+    p.push(loadImage(platBase + 'Brown Off.png').then(img => { t.platBrownOff = img; }).catch(() => {}));
+    p.push(loadImage(platBase + 'Grey On (32x8).png').then(img => { t.platGreyOn = img; }).catch(() => {}));
+    p.push(loadImage(platBase + 'Grey Off.png').then(img => { t.platGreyOff = img; }).catch(() => {}));
+    p.push(loadImage(platBase + 'Chain.png').then(img => { t.platChain = img; }).catch(() => {}));
+
+    const smiBase = PA1_BASE + 'Traps/Sand Mud Ice/';
+    p.push(loadImage(smiBase + 'Sand Mud Ice (16x6).png').then(img => { t.sandmudice = img; }).catch(() => {}));
+
+    const trampBase = PA1_BASE + 'Traps/Trampoline/';
+    p.push(loadImage(trampBase + 'Idle.png').then(img => { t.trampoline_idle = img; }).catch(() => {}));
+    p.push(loadImage(trampBase + 'Jump (28x28).png').then(img => { t.trampoline_jump = img; }).catch(() => {}));
 
     assets.traps = t;
     return p;

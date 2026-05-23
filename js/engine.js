@@ -1109,19 +1109,21 @@ export class Game {
     }
 
     _renderTrap(ctx, id, screenX, screenY) {
-        if (id >= 4100 && id <= 4102) {
-            PA1Sprites.drawTrapFire(ctx, true, screenX, screenY);
-        } else if (id === 4103) {
-            PA1Sprites.drawTrapFire(ctx, false, screenX, screenY);
-        } else if (id === 4110) {
-            PA1Sprites.drawTrapSaw(ctx, true, screenX, screenY);
-        } else if (id === 4111) {
-            PA1Sprites.drawTrapSaw(ctx, false, screenX, screenY);
-        } else if (id === 4120) {
-            PA1Sprites.drawTrampoline(ctx, false, screenX, screenY, 0);
-        } else if (id === 4121) {
-            const frame = PA1Sprites.getTrapAnimFrame('trampoline', 4) % 8;
-            PA1Sprites.drawTrampoline(ctx, true, screenX, screenY, frame);
+        switch (id) {
+            case 4100: PA1Sprites.drawTrapFire(ctx, screenX, screenY); break;
+            case 4110: PA1Sprites.drawTrapSaw(ctx, screenX, screenY); break;
+            case 4120: PA1Sprites.drawTrampoline(ctx, screenX, screenY); break;
+            case 4130: PA1Sprites.drawTrapSpikes(ctx, screenX, screenY); break;
+            case 4140: PA1Sprites.drawTrapArrow(ctx, screenX, screenY); break;
+            case 4150: PA1Sprites.drawTrapFallingPlatform(ctx, screenX, screenY); break;
+            case 4160: PA1Sprites.drawTrapFan(ctx, screenX, screenY); break;
+            case 4170: PA1Sprites.drawTrapSpikedBall(ctx, screenX, screenY); break;
+            case 4180: PA1Sprites.drawTrapRockHead(ctx, screenX, screenY); break;
+            case 4190: PA1Sprites.drawTrapSpikeHead(ctx, screenX, screenY); break;
+            case 4200: PA1Sprites.drawTrapBlocks(ctx, screenX, screenY); break;
+            case 4210: PA1Sprites.drawTrapPlatform(ctx, screenX, screenY, 'brown'); break;
+            case 4220: PA1Sprites.drawTrapPlatform(ctx, screenX, screenY, 'grey'); break;
+            case 4230: PA1Sprites.drawTrapSandMudIce(ctx, screenX, screenY); break;
         }
     }
 

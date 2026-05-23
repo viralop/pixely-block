@@ -555,9 +555,20 @@ function buildPalette() {
       { id: 5050, name: 'Checkpoint' }
     ], color: '#4fc3f7' },
     { label: 'Traps', items: [
-      { id: 4100, name: 'Fire 1' }, { id: 4101, name: 'Fire 2' }, { id: 4102, name: 'Fire 3' }, { id: 4103, name: 'Fire Off' },
-      { id: 4110, name: 'Saw On' }, { id: 4111, name: 'Saw Off' },
-      { id: 4120, name: 'Trampoline' }, { id: 4121, name: 'Trampoline Active' }
+      { id: 4100, name: 'Fire' },
+      { id: 4110, name: 'Saw' },
+      { id: 4120, name: 'Trampoline' },
+      { id: 4130, name: 'Spikes' },
+      { id: 4140, name: 'Arrow' },
+      { id: 4150, name: 'Fall Plat' },
+      { id: 4160, name: 'Fan' },
+      { id: 4170, name: 'Spk Ball' },
+      { id: 4180, name: 'Rock Hd' },
+      { id: 4190, name: 'Spike Hd' },
+      { id: 4200, name: 'Blocks' },
+      { id: 4210, name: 'Plat Brn' },
+      { id: 4220, name: 'Plat Gry' },
+      { id: 4230, name: 'Sand/Mud' }
     ], color: '#e94560' }
   ];
 
@@ -605,7 +616,7 @@ function updSelPreview() {
   const c = document.getElementById('sel-preview');
   const x = c.getContext('2d');
   x.imageSmoothingEnabled = false; x.clearRect(0, 0, 32, 32);
-  const PA1_SPECIAL_IDS = new Set([5001,5002,5003,5004,5005,5006,5007,5008,5020,5021,5022,5030,5031,5032,5040,5041,5042,5050,4100,4101,4102,4103,4110,4111,4120,4121]);
+  const PA1_SPECIAL_IDS = new Set([5001,5002,5003,5004,5005,5006,5007,5008,5020,5021,5022,5030,5031,5032,5040,5041,5042,5050,4100,4110,4120,4130,4140,4150,4160,4170,4180,4190,4200,4210,4220,4230]);
   if (PA1_SPECIAL_IDS.has(selId)) {
     x.fillStyle = '#ff6b9d33'; x.fillRect(0, 0, 32, 32);
     x.strokeStyle = '#ff6b9d'; x.lineWidth = 1; x.strokeRect(0.5, 0.5, 31, 31);
@@ -630,7 +641,7 @@ function onPalDown(e) {
   selectTile(id);
   dragging = true;
   ghostCv.width = RT; ghostCv.height = RT;
-  const PA1_SPECIAL_IDS = new Set([5001,5002,5003,5004,5005,5006,5007,5008,5020,5021,5022,5030,5031,5032,5040,5041,5042,5050,4100,4101,4102,4103,4110,4111,4120,4121]);
+  const PA1_SPECIAL_IDS = new Set([5001,5002,5003,5004,5005,5006,5007,5008,5020,5021,5022,5030,5031,5032,5040,5041,5042,5050,4100,4110,4120,4130,4140,4150,4160,4170,4180,4190,4200,4210,4220,4230]);
   if (PA1_SPECIAL_IDS.has(id)) {
     ghostCx.imageSmoothingEnabled = false;
     ghostCx.fillStyle = '#ff6b9d55'; ghostCx.fillRect(0, 0, RT, RT);
@@ -902,9 +913,9 @@ function render() {
   for (let r = sr; r <= er; r++) for (let c = sc; c <= ec; c++) {
     const x = c * RT, y = r * RT, id = (map[r] && map[r][c]) || 0;
     if (id > 0) {
-      const PA1_SPECIAL_IDS2 = new Set([5001,5002,5003,5004,5005,5006,5007,5008,5020,5021,5022,5030,5031,5032,5040,5041,5042,5050,4100,4101,4102,4103,4110,4111,4120,4121]);
+      const PA1_SPECIAL_IDS2 = new Set([5001,5002,5003,5004,5005,5006,5007,5008,5020,5021,5022,5030,5031,5032,5040,5041,5042,5050,4100,4110,4120,4130,4140,4150,4160,4170,4180,4190,4200,4210,4220,4230]);
       if (PA1_SPECIAL_IDS2.has(id)) {
-        let col = '#ff6b9d'; if (id >= 5020 && id <= 5049) col = '#c8a832'; else if (id === 5050) col = '#4fc3f7'; else if (id >= 4100 && id <= 4121) col = '#e94560';
+        let col = '#ff6b9d'; if (id >= 5020 && id <= 5049) col = '#c8a832'; else if (id === 5050) col = '#4fc3f7'; else if (id >= 4100 && id <= 4230) col = '#e94560';
         cx.fillStyle = col + '33'; cx.fillRect(x, y, RT, RT);
         cx.strokeStyle = col + '88'; cx.lineWidth = 1; cx.strokeRect(x + 0.5, y + 0.5, RT - 1, RT - 1);
         cx.fillStyle = col; cx.font = '10px monospace'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
@@ -1025,7 +1036,7 @@ function render() {
       cx.globalAlpha = 1;
     } else {
       cx.globalAlpha = 0.4;
-      const PA1_SPECIAL_IDS = new Set([5001,5002,5003,5004,5005,5006,5007,5008,5020,5021,5022,5030,5031,5032,5040,5041,5042,5050,4100,4101,4102,4103,4110,4111,4120,4121]);
+      const PA1_SPECIAL_IDS = new Set([5001,5002,5003,5004,5005,5006,5007,5008,5020,5021,5022,5030,5031,5032,5040,5041,5042,5050,4100,4110,4120,4130,4140,4150,4160,4170,4180,4190,4200,4210,4220,4230]);
       if (PA1_SPECIAL_IDS.has(selId)) {
         cx.fillStyle = '#ff6b9d44'; cx.fillRect(mgx * RT, mgy * RT, RT, RT);
         cx.strokeStyle = '#ff6b9d'; cx.lineWidth = 2; cx.strokeRect(mgx * RT, mgy * RT, RT, RT);

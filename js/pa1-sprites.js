@@ -114,36 +114,100 @@ export function drawCheckpoint(ctx, type, active, screenX, screenY, animFrame) {
     }
 }
 
-export function drawTrapFire(ctx, on, screenX, screenY) {
-    const key = on ? 'fire_on' : 'fire_off';
-    const sheet = PA1.getTrap(key);
+export function drawTrapFire(ctx, screenX, screenY) {
+    const sheet = PA1.getTrap('fire_on');
     if (!sheet) return;
     const fw = 16, fh = 32;
-    const frame = on ? getTrapAnimFrame('fire', 8) % 3 : 0;
+    const frame = getTrapAnimFrame('fire', 8) % PA1.getStripFrameCount(sheet, fw);
     PA1.drawStripFrame(ctx, sheet, frame, fw, fh, screenX, screenY, fw * TRAP_SCALE, fh * TRAP_SCALE, false);
 }
 
-export function drawTrapSaw(ctx, on, screenX, screenY) {
-    const key = on ? 'saw_on' : 'saw_off';
-    const sheet = PA1.getTrap(key);
+export function drawTrapSaw(ctx, screenX, screenY) {
+    const sheet = PA1.getTrap('saw_on');
     if (!sheet) return;
     const fw = 38, fh = 38;
-    const frame = on ? getTrapAnimFrame('saw', 4) % 8 : 0;
+    const frame = getTrapAnimFrame('saw', 4) % PA1.getStripFrameCount(sheet, fw);
     PA1.drawStripFrame(ctx, sheet, frame, fw, fh, screenX, screenY, fw * TRAP_SCALE, fh * TRAP_SCALE, false);
 }
 
-export function drawTrampoline(ctx, bouncing, screenX, screenY, frame) {
-    const key = bouncing ? 'trampoline_jump' : 'trampoline_idle';
-    const sheet = PA1.getTrap(key);
+export function drawTrampoline(ctx, screenX, screenY) {
+    const sheet = PA1.getTrap('trampoline_idle');
     if (!sheet) return;
     const fw = 28, fh = 28;
-    if (!bouncing) {
-        PA1.drawStripFrame(ctx, sheet, 0, fw, fh, screenX, screenY, fw * TRAP_SCALE, fh * TRAP_SCALE, false);
-    } else {
-        const total = PA1.getStripFrameCount(sheet, fw);
-        frame = Math.min(frame, total - 1);
-        PA1.drawStripFrame(ctx, sheet, frame, fw, fh, screenX, screenY, fw * TRAP_SCALE, fh * TRAP_SCALE, false);
-    }
+    PA1.drawStripFrame(ctx, sheet, 0, fw, fh, screenX, screenY, fw * TRAP_SCALE, fh * TRAP_SCALE, false);
+}
+
+export function drawTrapSpikes(ctx, screenX, screenY) {
+    const sheet = PA1.getTrap('spikes');
+    if (!sheet) return;
+    const fw = sheet.width, fh = sheet.height;
+    PA1.drawStripFrame(ctx, sheet, getTrapAnimFrame('spikes', 12) % PA1.getStripFrameCount(sheet, fw), fw, fh, screenX, screenY, fw * TRAP_SCALE, fh * TRAP_SCALE, false);
+}
+
+export function drawTrapArrow(ctx, screenX, screenY) {
+    const sheet = PA1.getTrap('arrow_idle');
+    if (!sheet) return;
+    const fw = 18, fh = 18;
+    PA1.drawStripFrame(ctx, sheet, getTrapAnimFrame('arrow', 12) % PA1.getStripFrameCount(sheet, fw), fw, fh, screenX, screenY, fw * TRAP_SCALE, fh * TRAP_SCALE, false);
+}
+
+export function drawTrapFallingPlatform(ctx, screenX, screenY) {
+    const sheet = PA1.getTrap('falling_on');
+    if (!sheet) return;
+    const fw = 32, fh = 10;
+    PA1.drawStripFrame(ctx, sheet, 0, fw, fh, screenX, screenY, fw * TRAP_SCALE, fh * TRAP_SCALE, false);
+}
+
+export function drawTrapFan(ctx, screenX, screenY) {
+    const sheet = PA1.getTrap('fan_on');
+    if (!sheet) return;
+    const fw = 24, fh = 8;
+    const frame = getTrapAnimFrame('fan', 6) % PA1.getStripFrameCount(sheet, fw);
+    PA1.drawStripFrame(ctx, sheet, frame, fw, fh, screenX, screenY, fw * TRAP_SCALE, fh * TRAP_SCALE, false);
+}
+
+export function drawTrapSpikedBall(ctx, screenX, screenY) {
+    const sheet = PA1.getTrap('spikedBall');
+    if (!sheet) return;
+    const s = 16;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(sheet, 0, 0, sheet.width, sheet.height, Math.round(screenX), Math.round(screenY), sheet.width * TRAP_SCALE, sheet.height * TRAP_SCALE);
+}
+
+export function drawTrapRockHead(ctx, screenX, screenY) {
+    const sheet = PA1.getTrap('rockhead_idle');
+    if (!sheet) return;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(sheet, 0, 0, sheet.width, sheet.height, Math.round(screenX), Math.round(screenY), sheet.width * TRAP_SCALE, sheet.height * TRAP_SCALE);
+}
+
+export function drawTrapSpikeHead(ctx, screenX, screenY) {
+    const sheet = PA1.getTrap('spikehead_idle');
+    if (!sheet) return;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(sheet, 0, 0, sheet.width, sheet.height, Math.round(screenX), Math.round(screenY), sheet.width * TRAP_SCALE, sheet.height * TRAP_SCALE);
+}
+
+export function drawTrapBlocks(ctx, screenX, screenY) {
+    const sheet = PA1.getTrap('block_idle');
+    if (!sheet) return;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(sheet, 0, 0, sheet.width, sheet.height, Math.round(screenX), Math.round(screenY), sheet.width * TRAP_SCALE, sheet.height * TRAP_SCALE);
+}
+
+export function drawTrapPlatform(ctx, screenX, screenY, type) {
+    const key = type === 'grey' ? 'platGreyOn' : 'platBrownOn';
+    const sheet = PA1.getTrap(key);
+    if (!sheet) return;
+    const fw = 32, fh = 8;
+    PA1.drawStripFrame(ctx, sheet, 0, fw, fh, screenX, screenY, fw * TRAP_SCALE, fh * TRAP_SCALE, false);
+}
+
+export function drawTrapSandMudIce(ctx, screenX, screenY) {
+    const sheet = PA1.getTrap('sandmudice');
+    if (!sheet) return;
+    const fw = 16, fh = 6;
+    PA1.drawStripFrame(ctx, sheet, 0, fw, fh, screenX, screenY, fw * TRAP_SCALE, fh * TRAP_SCALE, false);
 }
 
 export function drawBackground(ctx, color, canvasW, canvasH, camX, camY) {
