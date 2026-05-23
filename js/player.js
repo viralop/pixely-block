@@ -55,8 +55,6 @@ export class Player {
         this.dead = false;
         this.animFrame = 0;
         this.animTimer = 0;
-        this.idleAnimFrame = 0;
-        this.idleAnimTimer = 0;
         this.runFrames = [CHAR_IDS.run1, CHAR_IDS.run2, CHAR_IDS.run3];
         this.didJump = false;
         this.didAttack = false;
@@ -115,10 +113,6 @@ export class Player {
             this.animTimer++;
             if (this.animTimer >= 6) { this.animTimer = 0; this.animFrame = (this.animFrame + 1) % this.runFrames.length; }
         } else { this.animTimer = 0; this.animFrame = 0; }
-        if (Math.abs(this.vx) < 0.5 && this.onGround) {
-            this.idleAnimTimer++;
-            if (this.idleAnimTimer >= 20) { this.idleAnimTimer = 0; this.idleAnimFrame = (this.idleAnimFrame + 1) % 11; }
-        }
         this._checkGrabLadder(input, solidMap, tileW, tileH);
         this._checkGrabRope(input, solidMap, tileW, tileH);
         if (this.y > solidMap.length * tileH + 100) {
@@ -286,21 +280,30 @@ export class Player {
 
             if (this.climbing || this.onRope) {
                 sheet = charData.idle;
-                frame = Math.floor(this.animTimer / 10) % PA1Assets.getStripFrameCount(sheet, frameW);
+                frame = Math.floor(Date.now() / 150) % PA1Assets.getStripFrameCount(sheet, frameW);
             } else if (!this.onGround) {
                 sheet = this.vy < -3 ? charData.jump : charData.fall;
                 frame = 0;
             } else if (Math.abs(this.vx) > 0.5) {
                 sheet = charData.run;
-                frame = this.animFrame % PA1Assets.getStripFrameCount(sheet, frameW);
+                const spd = 80;
+                frame = Math.floor(Date.now() / spd) % PA1Assets.getStripFrameCount(sheet, frameW);
             } else {
                 sheet = charData.idle;
-                frame = this.idleAnimFrame % PA1Assets.getStripFrameCount(sheet, frameW);
+                frame = Math.floor(Date.now() / 150) % PA1Assets.getStripFrameCount(sheet, frameW);
             }
 
             if (sheet) {
-                ctx.clearRect(drawX, drawY, renderSz, renderSz);
-                PA1Assets.drawStripFrame(ctx, sheet, frame, frameW, frameH, drawX, drawY, renderSz, renderSz, flip);
+                ctx.imageSmoothingEnabled = false;
+                if (flip) {
+                    ctx.save();
+                    ctx.translate(drawX + renderSz, drawY);
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(sheet, frame * frameW, 0, frameW, frameH, 0, 0, renderSz, renderSz);
+                    ctx.restore();
+                } else {
+                    ctx.drawImage(sheet, frame * frameW, 0, frameW, frameH, drawX, drawY, renderSz, renderSz);
+                }
             }
 
             if (isAttacking) {
